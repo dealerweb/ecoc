@@ -1,0 +1,90 @@
+/*
+ * The A5 pages of a booklet, on top of certificate.css: the same document, set smaller and tighter for the page. The
+ * foot of every page is drawn by Render\PdfRenderer.
+ */
+
+@page {
+    size: A5 portrait;
+    margin: 7mm 9mm 10mm 9mm;
+}
+
+body {
+    font-size: 7pt;
+    line-height: 1.15;
+}
+
+.notice {
+    font-size: 6.5pt;
+}
+
+.vehicle {
+    font-size: 9.5pt;
+}
+
+td.vin-box {
+    width: 42mm;
+}
+
+.vin-label {
+    font-size: 5pt;
+}
+
+.vin {
+    font-size: 7.5pt;
+}
+
+.part {
+    margin-top: 1.2mm;
+    padding: 0.4mm 1.5mm;
+    font-size: 6.5pt;
+}
+
+.section-title {
+    margin-top: 1.2mm;
+    margin-bottom: 0.2mm;
+    padding-bottom: 0.2mm;
+    border-bottom-width: 0.5pt;
+    font-size: 6.5pt;
+}
+
+.subheading {
+    margin-top: 1mm;
+    font-size: 6pt;
+}
+
+table.rows td {
+    padding: 0.1mm 0;
+    border-bottom-width: 0.25pt;
+}
+
+.number {
+    width: 9mm;
+    font-size: 5pt;
+}
+
+.label {
+    width: 52mm;
+    padding-right: 1.5mm !important;
+    font-size: 6.2pt;
+}
+
+.note {
+    margin-top: 0;
+    font-size: 5pt;
+}
+
+table.values {
+    margin-top: 0.5mm;
+    margin-bottom: 0.5mm;
+}
+
+table.values th {
+    padding: 0.1mm 0.5mm 0.1mm 0;
+    border-bottom-width: 0.5pt;
+    font-size: 5.5pt;
+}
+
+table.values td {
+    padding: 0.1mm 0.5mm 0.1mm 0;
+    border-bottom-width: 0.25pt;
+}

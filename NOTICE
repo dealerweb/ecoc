@@ -1,0 +1,50 @@
+dealerweb/ecoc
+Copyright (c) 2026 DealerWeb
+
+Licensed under the MIT License (see LICENSE) - provided "as is", without any warranty or liability.
+Third-party material in this package keeps its own license and terms, listed below.
+
+
+IVI message book - EReg
+=======================
+
+resources/compiled/fields.php holds the names, units and code values of the fields of the Initial
+Vehicle Information (IVI) from the IVI message book, version 1.11 of 2025-04-02, published
+by Topic Group XII of the Association of European Vehicle and Driver Registration Authorities (EReg).
+The names of the fields of IVI 2.0 in resources/layout/certificate.php follow the draft of its XML
+schema of 2025-02-27, the codes of IVI 2.0 in resources/translations/codes-*.php this draft as well.
+
+Sources: resources/messagebook/SOURCE.md.
+
+
+Regulations of the European Union
+=================================
+
+The labels of the numbered items (resources/translations/items-*.php), the words of the tables of
+point 49 (resources/translations/render-*.php) and the types of bodywork
+(resources/translations/codes-*.php) are the official German, English and French wording of Annex VIII
+of Commission Implementing Regulation (EU) 2020/683 and of Annex I of Regulation (EU) 2018/858, as
+published on EUR-Lex. Their reuse is authorised, see
+https://eur-lex.europa.eu/content/legal-notice/legal-notice.html. Only the texts in the Official
+Journal of the European Union are authentic.
+
+Sources: resources/messagebook/SOURCE.md.
+
+
+Own translations
+================
+
+Where no official wording exists, the texts in resources/translations are the package's own (MIT, like
+the rest of the package): the headings and hints of the document, the names of the columns of the table
+of NEDC values, the meaning of many codes in German and French, the titles of the rare fields
+(resources/translations/fields-en.php).
+
+
+Dependencies
+============
+
+Not part of this package: Composer installs them as separate packages, each under its own license.
+The PDF output (Render\PdfRenderer) uses dompdf/dompdf (LGPL-2.1) with dompdf/php-font-lib
+(LGPL-2.1-or-later), dompdf/php-svg-lib (LGPL-3.0-or-later), masterminds/html5 (MIT) and
+sabberworm/php-css-parser (MIT), and the font DejaVu Sans that comes with dompdf. The booklet
+(Render\Booklet) uses setasign/fpdi and setasign/fpdf (MIT).

@@ -1,0 +1,51 @@
+{
+    "name": "dealerweb/ecoc",
+    "description": "eCoC viewer in pure PHP: turn the XML data set (IVI) of a vehicle's electronic certificate of conformity, e.g. from the German KBA, into a readable CoC paper - PDF, A5 booklet or HTML, in German, English and French.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "ecoc",
+        "e-coc",
+        "coc",
+        "coc-paper",
+        "certificate-of-conformity",
+        "uebereinstimmungsbescheinigung",
+        "ivi",
+        "initial-vehicle-information",
+        "type-approval",
+        "homologation",
+        "vehicle",
+        "automotive",
+        "wltp",
+        "kba",
+        "eucaris",
+        "viewer",
+        "visualizer",
+        "parser",
+        "xml",
+        "xml-to-pdf",
+        "pdf",
+        "html",
+        "booklet"
+    ],
+    "homepage": "https://github.com/dealerweb/ecoc",
+    "support": {
+        "issues": "https://github.com/dealerweb/ecoc/issues",
+        "source": "https://github.com/dealerweb/ecoc",
+        "security": "https://github.com/dealerweb/ecoc/security/policy"
+    },
+    "require": {
+        "php": "^8.2",
+        "ext-dom": "*",
+        "ext-libxml": "*",
+        "ext-mbstring": "*",
+        "dompdf/dompdf": "^3.1",
+        "setasign/fpdf": "^1.8.6",
+        "setasign/fpdi": "^2.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Dealerweb\\ECoc\\": "src/"
+        }
+    }
+}

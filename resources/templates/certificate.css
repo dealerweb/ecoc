@@ -1,0 +1,229 @@
+/*
+ * dealerweb/ecoc - the data of a certificate of conformity, in the order and with the numbers of the certificate.
+ *
+ * dompdf knows neither flexbox nor grid nor custom properties: the layout uses tables, colours are written out. The
+ * foot of every page of a PDF is drawn by Render\PdfRenderer, the HTML page has it once at its end. What only the HTML
+ * page does, grid on a narrow screen as well, hangs on .screen: a PDF never has that class.
+ */
+
+@page {
+    size: A4 portrait;
+    margin: 14mm 16mm 18mm 16mm;
+}
+
+body {
+    margin: 0;
+    background: #ffffff;
+    color: #1f2328;
+    font-family: "DejaVu Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 8pt;
+    line-height: 1.2;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+td,
+th {
+    padding: 0;
+    text-align: left;
+    vertical-align: top;
+}
+
+/* On screen the document is a sheet of paper with the margins of the page. */
+.screen {
+    background: #eef1f4;
+}
+
+.screen .sheet {
+    width: 210mm;
+    max-width: 100%;
+    margin: 20px auto;
+    padding: 14mm 16mm;
+    box-sizing: border-box;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* On a phone there is no room for a sheet of paper: number and label stand above the value, tables scroll sideways. */
+@media (max-width: 600px) {
+    .screen .sheet {
+        margin: 0;
+        padding: 4mm;
+        box-shadow: none;
+    }
+
+    .screen .sheet > table:first-child td {
+        display: block;
+        width: auto;
+        text-align: left;
+    }
+
+    .screen table.rows tr {
+        display: grid;
+        grid-template-columns: 13mm minmax(0, 1fr);
+        padding: 1mm 0;
+        border-bottom: 0.5pt solid #e6e9ed;
+    }
+
+    .screen table.rows td {
+        display: block;
+        width: auto;
+        padding: 0 !important;
+        border: 0;
+    }
+
+    .screen table.rows .value {
+        grid-column: 2;
+        font-size: 9pt;
+    }
+
+    .screen table.values {
+        display: block;
+        overflow-x: auto;
+    }
+}
+
+/* ------------------------------------------------------------------ head */
+
+.notice {
+    color: #5c4813;
+    font-size: 8pt;
+    font-weight: bold;
+}
+
+.vehicle {
+    margin-top: 0.5pt;
+    color: #1f4e79;
+    font-size: 13pt;
+    font-weight: bold;
+    line-height: 1.15;
+}
+
+td.vin-box {
+    width: 58mm;
+    text-align: right;
+    vertical-align: bottom;
+}
+
+.vin-label {
+    color: #5f6b7a;
+    font-size: 6.5pt;
+}
+
+.vin {
+    font-size: 10pt;
+    font-weight: bold;
+}
+
+/* ------------------------------------------------------------------ parts and sections */
+
+.part {
+    margin-top: 2.5mm;
+    padding: 0.8mm 2mm;
+    background: #1f4e79;
+    color: #ffffff;
+    font-size: 8.5pt;
+    font-weight: bold;
+    page-break-after: avoid;
+}
+
+.section-title {
+    margin-top: 2.5mm;
+    margin-bottom: 0.5mm;
+    padding-bottom: 0.6mm;
+    border-bottom: 0.75pt solid #1f4e79;
+    color: #1f4e79;
+    font-size: 8pt;
+    font-weight: bold;
+    page-break-after: avoid;
+}
+
+.subheading {
+    margin-top: 2mm;
+    color: #1f4e79;
+    font-size: 7.5pt;
+    font-weight: bold;
+    page-break-after: avoid;
+}
+
+/* ------------------------------------------------------------------ rows: number, label, value */
+
+table.rows tr {
+    page-break-inside: avoid;
+}
+
+table.rows td {
+    padding: 0.35mm 0;
+    border-bottom: 0.5pt solid #e6e9ed;
+}
+
+.number {
+    width: 13mm;
+    color: #8a94a0;
+    font-size: 7pt;
+}
+
+.label {
+    width: 78mm;
+    padding-right: 3mm !important;
+    color: #5f6b7a;
+    font-size: 7.5pt;
+}
+
+/* A long value without a space, like a hash, breaks in the cell and does not run off the page. */
+.value,
+.vehicle,
+.vin {
+    overflow-wrap: anywhere;
+}
+
+.note {
+    margin-top: 0.3mm;
+    color: #8a94a0;
+    font-size: 6.5pt;
+}
+
+/* ------------------------------------------------------------------ tables: fuel consumption and CO2 */
+
+table.values {
+    margin-top: 1mm;
+    margin-bottom: 1mm;
+    page-break-inside: avoid;
+}
+
+table.values th {
+    padding: 0.35mm 1mm 0.35mm 0;
+    border-bottom: 0.75pt solid #1f4e79;
+    color: #1f4e79;
+    font-size: 7pt;
+    font-weight: bold;
+}
+
+table.values td {
+    padding: 0.35mm 1mm 0.35mm 0;
+    border-bottom: 0.5pt solid #e6e9ed;
+}
+
+table.values .number {
+    padding-right: 0;
+}
+
+/* ------------------------------------------------------------------ the end of the HTML page */
+
+.foot {
+    margin-top: 4mm;
+    padding-top: 1mm;
+    border-top: 0.5pt solid #d9dee4;
+    color: #5f6b7a;
+    font-size: 6.5pt;
+}
+
+/* ------------------------------------------------------------------ a value the data set lacks */
+
+.missing {
+    color: #c05a00;
+    font-weight: bold;
+}
