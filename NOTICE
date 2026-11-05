@@ -11,8 +11,11 @@ IVI message book - EReg
 resources/compiled/fields.php holds the names, units and code values of the fields of the Initial
 Vehicle Information (IVI) from the IVI message book, version 1.11 of 2025-04-02, published
 by Topic Group XII of the Association of European Vehicle and Driver Registration Authorities (EReg).
-The names of the fields of IVI 2.0 in resources/layout/certificate.php follow the draft of its XML
-schema of 2025-02-27, the codes of IVI 2.0 in resources/translations/codes-*.php this draft as well.
+
+resources/compiled/fields-2.php holds the names, units and the texts of the codes of IVI 2.0 from its
+XML schema of 2026-09-28 and its message book, version 3.1, published on the portal of EUCARIS for the
+eCoC. The names of the fields in resources/layout/certificate.php follow them, the codes of IVI 2.0 in
+resources/translations/codes-*.php as well.
 
 Sources: resources/messagebook/SOURCE.md.
 
@@ -21,10 +24,11 @@ Regulations of the European Union
 =================================
 
 The labels of the numbered items (resources/translations/items-*.php), the words of the tables of
-point 49 (resources/translations/render-*.php) and the types of bodywork
+point 49 (resources/translations/render-*.php), the types of bodywork and the special purposes
 (resources/translations/codes-*.php) are the official German, English and French wording of Annex VIII
-of Commission Implementing Regulation (EU) 2020/683 and of Annex I of Regulation (EU) 2018/858, as
-published on EUR-Lex. Their reuse is authorised, see
+of Commission Implementing Regulation (EU) 2020/683, also as amended by Implementing Regulation
+(EU) 2025/1706, and of Annex I of Regulation (EU) 2018/858, as published on EUR-Lex. Their reuse is
+authorised, see
 https://eur-lex.europa.eu/content/legal-notice/legal-notice.html. Only the texts in the Official
 Journal of the European Union are authentic.
 

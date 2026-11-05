@@ -26,6 +26,8 @@ final class ViewBuilder
     /** What stands in the place of a value the data set lacks: the same in every language, narrow enough for every column. */
     private const MISSING = '-';
 
+    private const ROAD_VEHICLES = '2018/858';
+
     /** @var SplObjectStorage<Node, true> */
     private SplObjectStorage $used;
 
@@ -43,6 +45,9 @@ final class ViewBuilder
 
     /** The fuel with whose values the document marks what the data set lacks; null when it marks nothing. */
     private ?Node $gapHost = null;
+
+    /** The regulation the vehicle is approved under. The numbers of the document are those of 2018/858. */
+    private string $act = self::ROAD_VEHICLES;
 
     public function __construct(
         private readonly Certificate $certificate,
@@ -65,12 +70,13 @@ final class ViewBuilder
         $this->used = new SplObjectStorage();
         $this->addresses = null;
         $this->gapHost = $this->findGapHost();
+        $this->act = self::actOf($this->certificate->value('VehicleCategoryCode', 'VehicleCategory') ?? '');
 
         $parts = [];
         foreach ($this->layout['parts'] as $partKey => $sections) {
             $built = [];
             foreach ($sections as $sectionKey => $items) {
-                $blocks = self::grouped($this->items($items, $this->root));
+                $blocks = self::grouped($this->numberedAsTheAct($this->items($items, $this->root)));
                 if ($blocks !== []) {
                     $built[] = ['title' => $this->texts->get('section.' . $sectionKey), 'blocks' => $blocks];
                 }
@@ -143,11 +149,13 @@ final class ViewBuilder
             'signers' => $this->signers(),
             'signature' => $this->signature(),
             'axleRoles' => $this->axleRoles(),
+            'combination' => $this->combination(),
             'towing' => $this->towing(),
             'engines' => $this->engines(),
             'gears' => $this->gears(),
             'axleSuspension' => $this->axleSuspension(),
             'tyres' => $this->tyres(),
+            'bodywork' => $this->bodywork(),
             'environment' => $this->environment(),
             'remarks' => $this->remarks(),
             default => throw new LogicException("Unknown block \"$name\" in the layout."),
@@ -160,32 +168,12 @@ final class ViewBuilder
      */
     private function row(array $item, Node $scope): ?array
     {
-        $scope = ($item['root'] ?? false) === true ? $this->root : $scope;
-
-        if (isset($item['pairs'])) {
-            $lines = $this->pairs($item['pairs'], $scope);
-        } elseif (isset($item['axles'])) {
-            $lines = $this->axleValues((string) $item['axles'], ($item['spacing'] ?? false) === true);
-        } elseif (isset($item['axleGroups'])) {
-            $lines = $this->axleGroupValues((string) $item['axleGroups']);
-        } elseif (($item['all'] ?? false) === true) {
-            $lines = [];
-            while (($line = $this->fill((string) $item[1], $scope)) !== null) {
-                $lines[] = $line;
-            }
-            if (($item['distinct'] ?? false) === true) {
-                $lines = array_values(array_unique($lines));
-            }
-        } else {
-            $lines = [];
-            foreach ((array) $item[1] as $template) {
-                $line = $this->fill((string) $template, $scope);
-                if ($line !== null && $line !== '') {
-                    $lines[] = $line;
-                }
-            }
+        if (isset($item['act']) && $item['act'] !== $this->act) {
+            return null;
         }
 
+        $scope = ($item['root'] ?? false) === true ? $this->root : $scope;
+        $lines = $this->lines($item, $scope);
         $missing = $lines === [];
         if ($missing && ! $this->isLacking($item, $scope)) {
             return null;
@@ -195,6 +183,105 @@ final class ViewBuilder
         $label = isset($item['label']) ? $this->texts->get('label.' . $item['label']) : $this->texts->item($number);
 
         return self::rowOf($number, $label, $missing ? [self::MISSING] : $lines, '', $missing);
+    }
+
+    private static function actOf(string $category): string
+    {
+        return match ($category === '' ? '' : $category[0]) {
+            'L' => '168/2013',
+            'T', 'C', 'R', 'S' => '167/2013',
+            default => self::ROAD_VEHICLES,
+        };
+    }
+
+    /**
+     * The lines a row takes from a scope.
+     *
+     * @param array<int|string, mixed> $item
+     * @return list<string>
+     */
+    private function lines(array $item, Node $scope): array
+    {
+        $groups = isset($item['groups']) ? (string) $item['groups'] : null;
+        if (isset($item['axles'])) {
+            return $this->axleValues((string) $item['axles'], ($item['spacing'] ?? false) === true, $groups);
+        }
+        if (isset($item['axleGroups'])) {
+            return $this->axleGroupValues((string) $item['axleGroups'], $groups);
+        }
+
+        $lines = [];
+        foreach ($this->scopes($scope, $groups) as $group) {
+            if (isset($item['pairs'])) {
+                array_push($lines, ...$this->pairs($item['pairs'], $group));
+
+                continue;
+            }
+            foreach ((array) $item[1] as $template) {
+                if (($item['all'] ?? false) === true) {
+                    array_push($lines, ...$this->every((string) $template, $group));
+
+                    continue;
+                }
+                $line = $this->line((string) $template, $group);
+                if ($line !== null && $line !== '') {
+                    $lines[] = $line;
+                }
+            }
+        }
+
+        return ($item['distinct'] ?? false) === true ? array_values(array_unique($lines)) : $lines;
+    }
+
+    /**
+     * The groups of this name below a scope, or the scope itself when it has none: IVI 1.x has some of them only since a version.
+     *
+     * @return list<Node>
+     */
+    private function scopes(Node $scope, ?string $groups): array
+    {
+        return $groups === null ? [$scope] : ($scope->find(...explode('|', $groups)) ?: [$scope]);
+    }
+
+    /**
+     * A template as a line of its own: what an optional part leaves in front of the first value goes.
+     */
+    private function line(string $template, Node $scope): ?string
+    {
+        $line = $this->fill($template, $scope);
+
+        return $line === null ? null : ltrim($line, ', ');
+    }
+
+    /**
+     * Every occurrence of a template in a scope, one line each.
+     *
+     * @return list<string>
+     */
+    private function every(string $template, Node $scope): array
+    {
+        $lines = [];
+        while (($line = $this->line($template, $scope)) !== null && $line !== '') {
+            $lines[] = $line;
+        }
+
+        return $lines;
+    }
+
+    /**
+     * The blocks without their numbers where the numbers of Annex VIII do not hold: two-wheelers (Regulation (EU) No 168/2013) and
+     * tractors (Regulation (EU) No 167/2013) have certificates with other numbers, a number here would point to something else.
+     *
+     * @param list<Block> $blocks
+     * @return list<Block>
+     */
+    private function numberedAsTheAct(array $blocks): array
+    {
+        if ($this->act === self::ROAD_VEHICLES) {
+            return $blocks;
+        }
+
+        return array_map(static fn(array $block): array => isset($block['number']) ? ['number' => ''] + $block : $block, $blocks);
     }
 
     /**
@@ -246,13 +333,14 @@ final class ViewBuilder
         $missing = false;
         $taken = [];
         $text = preg_replace_callback(
-            '~\{([#@=^]?)([\w|]+)\}|%(\w+)%~',
+            '~\{([#@=^\~]?)([\w|]+)\}|%(\w+)%~',
             function (array $match) use ($scope, $marked, &$missing, &$taken): string {
                 if (($match[3] ?? '') !== '') {
                     return $this->texts->get('word.' . $match[3]);
                 }
 
-                $node = $this->unused(explode('|', $match[2]), $scope, [...$marked, ...$taken]);
+                $names = explode('|', $match[2]);
+                $node = $match[1] === '~' ? $scope->first(...$names) : $this->unused($names, $scope, [...$marked, ...$taken]);
                 if ($node === null) {
                     $missing = true;
 
@@ -332,38 +420,58 @@ final class ViewBuilder
     /**
      * @return list<string>
      */
-    private function axleValues(string $template, bool $spacing): array
+    private function axleValues(string $template, bool $spacing, ?string $groups): array
     {
-        $parts = [];
+        $values = [];
         foreach ($this->root->find('AxleGroup') as $index => $axle) {
-            $value = $this->fill($template, $axle);
-            if ($value === null) {
-                continue;
+            foreach ($this->scopes($axle, $groups) as $scope) {
+                foreach ($this->every($template, $scope) as $value) {
+                    $number = $this->axleNumber($axle, $index);
+                    $values[$spacing ? $number . '-' . ((int) $number + 1) : $number][] = $value;
+                }
             }
-            $number = $this->axleNumber($axle, $index);
-            $parts[] = ($spacing ? $number . '-' . ((int) $number + 1) : $number) . ': ' . $value;
         }
 
-        return $parts === [] ? [] : [implode(' · ', $parts)];
+        return self::axleLines($values);
+    }
+
+    /**
+     * One value on every axle fits on one line: "1: 780 kg · 2: 720 kg". With several values on an axle, every axle has its own line.
+     *
+     * @param array<int|string, list<string>> $values
+     * @return list<string>
+     */
+    private static function axleLines(array $values): array
+    {
+        if ($values === []) {
+            return [];
+        }
+
+        $lines = [];
+        foreach ($values as $number => $list) {
+            $lines[] = "$number: " . implode(' · ', $list);
+        }
+
+        return max(array_map('count', $values)) === 1 ? [implode(' · ', $lines)] : $lines;
     }
 
     /**
      * @return list<string>
      */
-    private function axleGroupValues(string $template): array
+    private function axleGroupValues(string $template, ?string $groups): array
     {
-        $parts = [];
+        $values = [];
         foreach ($this->root->find('AxleGroupGroup') as $index => $group) {
-            $value = $this->fill($template, $group);
-            if ($value === null) {
-                continue;
+            foreach ($this->scopes($group, $groups) as $scope) {
+                foreach ($this->every($template, $scope) as $value) {
+                    $number = $group->first('AxleGroupNumber');
+                    $this->mark($number);
+                    $values[$number->value ?? (string) ($index + 1)][] = $value;
+                }
             }
-            $number = $group->first('AxleGroupNumber');
-            $this->mark($number);
-            $parts[] = ($number->value ?? (string) ($index + 1)) . ': ' . $value;
         }
 
-        return $parts === [] ? [] : [implode(' · ', $parts)];
+        return self::axleLines($values);
     }
 
     private function axleNumber(Node $axle, int $index): string
@@ -395,6 +503,7 @@ final class ViewBuilder
 
         return $positions;
     }
+
     /**
      * @return list<Block>
      */
@@ -410,17 +519,40 @@ final class ViewBuilder
         foreach ($roles as [$number, $label, $count, $flags]) {
             $total = $this->fill('{' . $count . '}', $this->root);
             $positions = $this->flaggedAxles(...$flags);
-            if ($total === null && $positions === []) {
+            $connections = $number === '3' ? $this->axleConnections() : [];
+            if ($total === null && $positions === [] && $connections === []) {
                 continue;
             }
-            $line = $total ?? (string) count($positions);
+            $line = $total ?? ($positions === [] ? '' : (string) count($positions));
             if ($positions !== []) {
                 $line .= ' (' . $this->texts->get('word.axle') . ' ' . implode(', ', $positions) . ')';
             }
-            $out[] = self::rowOf($number, $label === null ? $this->texts->item($number) : $this->texts->get('label.' . $label), [$line]);
+            $out[] = self::rowOf($number, $label === null ? $this->texts->item($number) : $this->texts->get('label.' . $label), $line === '' ? $connections : [$line, ...$connections]);
         }
 
         return $out;
+    }
+
+    /**
+     * How powered axles are connected. A connection stands with both of its axles in the data set, on the page once.
+     *
+     * @return list<string>
+     */
+    private function axleConnections(): array
+    {
+        $lines = [];
+        foreach ($this->root->find('AxleGroup') as $index => $axle) {
+            foreach ($axle->find('InterconnWithPoweredAxleGroup', 'InterconnectionWithPoweredAxleGroup') as $group) {
+                $other = $group->first('InterconnWithPoweredAxleNumber', 'InterconnectionWithPoweredAxleNumber');
+                $connection = $group->first('InterconnOfPoweredAxles', 'InterconnectionWithPoweredAxleConnection');
+                $this->mark($other, $connection);
+                $pair = $other === null ? [$this->axleNumber($axle, $index)] : [$this->axleNumber($axle, $index), $other->value];
+                sort($pair);
+                $lines[implode('-', $pair)] = $this->texts->get('word.axle') . ' ' . implode(' - ', $pair) . ($connection === null ? '' : ': ' . $this->display($connection));
+            }
+        }
+
+        return array_values($lines);
     }
 
     /**
@@ -459,19 +591,24 @@ final class ViewBuilder
      */
     private function tyres(): array
     {
-        $template = '{TyreSize}[ {LoadCapacityIndexSingleWheel}][/{LoadCapacityIndexTwinWheel}][{SpeedCategorySymbol}]'
-            . '[, {RimSizeIncludingOffSet}][, {RimSize}][/ET{RimOffSet}][, {TypeOfTyre|TyreType}]'
-            . '[; %rrc% {RollingResistanceClassCode|RollingResistanceClass}][, {TyreCategoryCode|TyreCategory}]';
+        $size = '{TyreSize}[ {LoadCapacityIndexSingleWheel}][/{LoadCapacityIndexTwinWheel}][{SpeedCategorySymbol}]'
+            . '[, {RimSizeIncludingOffSet}][, {RimSize}][/ET{#RimOffSet}]';
+        $classes = '[, {TyreTubeTypeCode|TyreTubeType}][, {TyrePlyRatingNumber} PR][; %rrc% {RollingResistanceClassCode|RollingResistanceClass}][, {TyreCategoryCode|TyreCategory}]';
 
         $lines = [];
         foreach ($this->root->find('AxleGroup') as $index => $axle) {
             foreach ($axle->find('TyreAxleGroup') as $tyre) {
-                $value = $this->fill($template, $tyre);
+                $value = $this->fill($size, $tyre);
                 if ($value === null) {
                     continue;
                 }
+                // IVI 2 has a value for each type: a tyre can be M+S and Extra Load.
+                while (($type = $this->fill('{TypeOfTyre|TyreType}', $tyre)) !== null) {
+                    $value .= ', ' . $type;
+                }
+                $value .= (string) $this->fill($classes, $tyre);
                 $this->mark($tyre->first('TyreNumber'));
-                foreach (['CO2DeterminationTyreInd' => 'tyre_co2', 'ProductionTyreRimVehInd' => 'tyre_production', 'TyreFittedProductionIndicator' => 'tyre_production'] as $flag => $word) {
+                foreach (['CO2DeterminationTyreInd' => 'tyre_co2', 'ProductionTyreRimVehInd' => 'tyre_production', 'TyreFittedProductionIndicator' => 'tyre_production', 'TyreMaximumSpeedIndicator' => 'tyre_over_300'] as $flag => $word) {
                     $node = $tyre->first($flag);
                     $this->mark($node);
                     if ($node?->value === 'Y') {
@@ -483,6 +620,47 @@ final class ViewBuilder
         }
 
         return $lines === [] ? [] : [self::rowOf('35', $this->texts->item('35'), $lines)];
+    }
+
+    /**
+     * The bodywork, one line each: a code with all its supplements.
+     *
+     * @return list<Block>
+     */
+    private function bodywork(): array
+    {
+        $lines = [];
+        foreach ($this->scopes($this->root, 'BodyworkGroup') as $group) {
+            $code = $this->fill('{=CodeForBodywork}', $group);
+            $parts = [...($code === null ? [] : [$code]), ...$this->every('{NumberForBodywork|CodeForBodyworkSupplement}', $group)];
+            if ($parts !== []) {
+                $lines[] = implode(', ', $parts);
+            }
+        }
+
+        return $lines === [] ? [] : [self::rowOf('38', $this->texts->item('38'), $lines)];
+    }
+
+    /**
+     * The maximum mass of the combination as a value of the vehicle: a type of trailer without a towable mass of its own, the same
+     * mass once. With a towable mass it stands in the row of that trailer.
+     *
+     * @return list<Block>
+     */
+    private function combination(): array
+    {
+        $lines = [];
+        foreach ($this->root->find('DrawbarTypeGroup', 'BodyworkTypeGroup') as $type) {
+            if ($type->first('TechPermMaxTowMassTrailer', 'TechnicallyPermissibleMaximumTowableMass') !== null) {
+                continue;
+            }
+            $line = $this->fill('{TechnPermMaxMassCombinTrail|TechnicallyPermissibleMaximumCombinationMass} kg', $type);
+            if ($line !== null) {
+                $lines[] = $line;
+            }
+        }
+
+        return $lines === [] ? [] : [self::rowOf('16.4', $this->texts->item('16.4'), array_values(array_unique($lines)))];
     }
 
     /**
@@ -507,11 +685,13 @@ final class ViewBuilder
                 }
                 $combination = $this->fill('{TechnPermMaxMassCombinTrail|TechnicallyPermissibleMaximumCombinationMass} kg', $type);
                 if ($combination !== null) {
-                    $mass .= ' (16.4: ' . $combination . ')';
+                    $mass .= ' (' . ($this->act === self::ROAD_VEHICLES ? '16.4' : $this->texts->item('16.4')) . ': ' . $combination . ')';
                 }
                 $rows[$number][] = $mass;
             }
         }
+
+        uksort($rows, static fn(int|string $a, int|string $b): int => strnatcmp((string) $a, (string) $b));
 
         $out = [];
         foreach ($rows as $number => $lines) {
@@ -605,7 +785,8 @@ final class ViewBuilder
             $direction = $group->first('DrivingDirectionCode');
             $this->mark($number, $direction, $ratio);
             if ($ratio !== null) {
-                $parts[] = ($direction?->value === 'R' ? 'R' : ($number->value ?? '')) . ': ' . $this->format->number($ratio->value);
+                $gear = $direction?->value === 'R' ? 'R' : $number?->value;
+                $parts[] = ($gear === null ? '' : "$gear: ") . $this->format->number($ratio->value);
             }
         }
 
@@ -734,7 +915,8 @@ final class ViewBuilder
     }
 
     /**
-     * What point 49 of the certificate distinguishes: externally chargeable hybrids, pure electric vehicles, all others.
+     * What point 49 of the certificate distinguishes: externally chargeable hybrids, pure electric vehicles, vehicles without a
+     * combustion engine like those with a fuel cell (no CO2 of their own), all others.
      */
     private function powertrain(): string
     {
@@ -742,22 +924,26 @@ final class ViewBuilder
             return 'electric';
         }
 
-        $class = $this->root->first('ClassOfHybridVehicleCode', 'ClassHybridVehicle')->value ?? '';
+        $class = $this->root->first('ClassOfHybridVehicleCode', 'ClassHybridVehicle', 'CategoryHybridElectricVehicle')->value ?? '';
         $charged = $this->root->first('OffVehicleChargingVehInd', 'OffVehicleChargingIndicator')?->value;
+        if (str_starts_with($class, 'OVC') || $charged === 'Y') {
+            return 'ovc';
+        }
 
-        return str_starts_with($class, 'OVC') || $charged === 'Y' ? 'ovc' : 'other';
+        return $this->root->first('EngineCapacity') === null ? 'no_combustion' : 'other';
     }
 
     /**
      * Where the document marks what the data set lacks: with the first fuel that has values of the WLTP, so that it says so
-     * once. The document shows what a data set delivers, so a gap is marked and never filled. Only for cars and vans with
-     * such values, in a format that has these fields (since IVI 1.8): an older or a heavy vehicle has other points.
+     * once. The document shows what a data set delivers, so a gap is marked and never filled. Only for the categories the
+     * official rules ask these values of (M1, M2, N1, N2), and only with such values, in a format that has these fields (since
+     * IVI 1.8): an older or a heavy vehicle has other points.
      */
     private function findGapHost(): ?Node
     {
         $category = $this->certificate->value('VehicleCategoryCode', 'VehicleCategory') ?? '';
         $version = $this->certificate->formatVersion() ?? '';
-        if (preg_match('~^[MN]1~', $category) !== 1 || version_compare($version, '1.8', '<')) {
+        if (preg_match('~^[MN][12]~', $category) !== 1 || version_compare($version, '1.8', '<')) {
             return null;
         }
 
@@ -789,7 +975,7 @@ final class ViewBuilder
      */
     private static function fieldsOf(string $template): array
     {
-        preg_match_all('~\{[#@=^]?([\w|]+)\}~', $template, $fields);
+        preg_match_all('~\{[#@=^\~]?([\w|]+)\}~', $template, $fields);
 
         return $fields[1];
     }
@@ -837,7 +1023,7 @@ final class ViewBuilder
 
         $lines = [];
         foreach ($this->root->find('StageNrOfManufacturingGroup', 'ManufacturerGroup') as $stage) {
-            $text = ltrim((string) $this->fill($template, $stage), ', ');
+            $text = (string) $this->line($template, $stage);
             if ($text === '') {
                 continue;
             }
@@ -950,7 +1136,7 @@ final class ViewBuilder
             }
         }
         foreach ($this->root->find('EURepresentativeGroup') as $group) {
-            $line = $this->addressLine($group, ['{EURepresentativeName}', '{EURepresentativeAdressLine1}', '{EURepresentativeAdressLine2}', '[{EURepresentativeAdressLine3}][ {EURepresentativePlaceOfResidence}]', '{EURepresentativeCountryOfResidence}']);
+            $line = $this->addressLine($group, ['{EURepresentativeName}', '{EURepresentativeAddressLine1}', '{EURepresentativeAddressLine2}', '[{EURepresentativeAddressLine3}][ {EURepresentativePlaceOfResidence}]', '{EURepresentativeCountryOfResidence}']);
             if ($line !== '') {
                 $addresses['representative'][] = $line;
             }
@@ -1032,7 +1218,7 @@ final class ViewBuilder
     {
         $lines = [];
         foreach ($this->root->find('SigningAuthorityGroup') as $group) {
-            $line = ltrim((string) $this->fill('[{NameOfSigner|SignerName}][, {PositionOfSigner|SignerPosition}][, {PlaceOfSignature|SignatureLocation}][, {@DateOfSignature|SignatureDate}]', $group), ', ');
+            $line = (string) $this->line('[{NameOfSigner|SignerName}][, {PositionOfSigner|SignerPosition}][, {PlaceOfSignature|SignatureLocation}][, {@DateOfSignature|SignatureDate}]', $group);
             if ($line !== '') {
                 $lines[] = $line;
             }
@@ -1103,7 +1289,8 @@ final class ViewBuilder
             }
             if (preg_match('~^(\d+(?:\.\d+)*)\s*:\s*(.+)$~s', $segment, $match) === 1) {
                 $lines = array_values(array_filter(array_map('trim', explode(';', $match[2])), static fn(string $line): bool => $line !== ''));
-                $item = $this->texts->item($match[1]);
+                // The numbers of other acts mean something else: the text of the number would be wrong there.
+                $item = $this->act === self::ROAD_VEHICLES ? $this->texts->item($match[1]) : $match[1];
                 $rows[] = self::rowOf('52', $this->texts->get('label.remark_for', ['number' => $match[1]]), $lines, $item === $match[1] ? '' : $item);
             } else {
                 $plain[] = $segment;
@@ -1128,8 +1315,9 @@ final class ViewBuilder
             if ($leaf->value === '' || isset($this->used[$leaf]) || in_array($leaf->name, $this->layout['technical'], true)) {
                 continue;
             }
-            $field = CodeLists::field($leaf->name);
-            $value = $this->display($leaf) . ($field !== null && $field['unit'] !== '' ? ' ' . $field['unit'] : '');
+            $version = $this->certificate->formatVersion();
+            $field = CodeLists::field($leaf->name, $version);
+            $value = $this->display($leaf, CodeLists::isDecimal($leaf->name, $version) ? '#' : '') . ($field !== null && $field['unit'] !== '' ? ' ' . $field['unit'] : '');
             $out[] = self::rowOf('', $this->fieldLabel($leaf->name), [$value]);
         }
 

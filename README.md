@@ -8,8 +8,8 @@
 **eCoC viewer in pure PHP** - makes the electronic certificate of conformity (eCoC) of a vehicle readable: from the IVI
 data set, an XML file, to a CoC paper as PDF, A5 booklet or HTML page, in German, English or French.
 
-Since July 2026 the electronic certificate of conformity is mandatory in principle for newly manufactured vehicles in
-the EU, and authorities such as the German KBA hand out the data set: an XML file in the format IVI (Initial Vehicle
+In 2026 the electronic certificate of conformity becomes mandatory for newly manufactured vehicles in the EU, and
+authorities such as the German KBA hand out the data set: an XML file in the format IVI (Initial Vehicle
 Information), often named like `Ivi1xDatensatz_1.xml`, hundreds of fields and codes that nobody can read. This package
 reads it - IVI 1.x and IVI 2.0 - and shows it with the numbers and the wording of the certificate, the codes explained,
 nothing left out. Pure PHP (8.2+), no network access.
@@ -61,7 +61,7 @@ use Dealerweb\ECoc\CodeLists;
 $certificate->vin();                 // "XXXTESTVN00000001"
 $certificate->make();                // "Musterwagen"
 $certificate->commercialName();      // "TESTMODELL"
-$certificate->formatVersion();       // "1.9", "2.0.0": the version of the format, as the data set states it
+$certificate->formatVersion();       // "1.9", "2.0": the version of the format, as the data set states it
 $certificate->dateOfManufacture();   // "2026-03-09"
 $certificate->isSigned();            // whether it carries an electronic signature - the signature is not checked
 
@@ -71,7 +71,8 @@ $certificate->values('FuelCode', 'EnergySource');            // ["10"]: every oc
 
 CodeLists::label('FuelCode', '10', 'de');   // "Benzin": what a code means, in de, en or fr - null when it is unknown,
                                             // an InvalidArgumentException for any other language
-CodeLists::field('Wheelbase');              // ["title" => "Wheelbase", "unit" => "mm"]
+CodeLists::field('Wheelbase');              // ["title" => "Wheelbase", "unit" => "mm"], for a field of another unit in
+                                            // the other format with the version: CodeLists::field($name, $certificate->formatVersion())
 ```
 
 Values are the text of the data set, as delivered. A document that cannot be read as a data set throws
@@ -102,6 +103,9 @@ The renderers throw an `InvalidArgumentException` for a language other than `de`
 - **Only what the data set delivers:** no value is ever computed or filled in. Where the model of the certificate provides
   for a value for this powertrain and the data set of a car or van with WLTP values lacks it, an orange hyphen stands
   in its place at point 49.
+- **Road vehicles first:** the numbers are those of the certificate of road vehicles. The documents of two-wheelers and
+  tractors, whose certificates have other numbers, show the same rows without numbers, and more of their fields stand under
+  "Further data of the data set".
 - **No certificate:** every document says so, at its beginning ("not an original") and at the foot of every page ("not a
   certificate of conformity", the HTML page at its end). It carries no imitation of a signature: the signatory is shown as
   data, an electronic signature as "contained in the data set, not verified".
@@ -120,9 +124,6 @@ one sheet; a longer one takes more sheets, which are laid into each other.
 - **No retrieval:** the package reads a data set you have. It does not fetch one from an authority.
 - **No check of a data set:** neither of its electronic signature nor against the schema of IVI. Any document with the
   root element of IVI and a vehicle identification number is read and shown as delivered.
-- **IVI 2.0 from its draft:** the format is published as a draft of the schema (2025-02-27); the reading follows that
-  draft and has not met a real data set yet. A field it does not expect is not lost, it appears under "Further data of the
-  data set".
 
 ## How it works
 
@@ -131,8 +132,9 @@ one sheet; a longer one takes more sheets, which are laid into each other.
 - **The document** is a layout - which field stands where, with its names in both formats - that a builder fills from the
   data set, marking each field it takes. What is left over becomes "further data": a new field can land in the wrong place,
   but it cannot get lost.
-- **The field catalogue** comes from the IVI message book (version 1.11), the labels from the regulations of the EU: see
-  `NOTICE` and `resources/messagebook/SOURCE.md`.
+- **The field catalogues** come from the IVI message book (version 1.11) and, for IVI 2.0, from its schema of 2026-09-28 and its
+  message book (version 3.1), the labels from the regulations of the EU: see `NOTICE` and `resources/messagebook/SOURCE.md`. The
+  examples of the official eCoC portal are valid against that schema and come out whole.
 - **The PDF** is made by dompdf with remote files, PHP and JavaScript switched off, in the font DejaVu Sans that comes
   with it; the sheets of the booklet by FPDI, which places the finished A5 pages as vector graphics.
 

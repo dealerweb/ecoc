@@ -10,22 +10,21 @@ fields of IVI 1.x. The titles of the rare fields in `resources/translations/fiel
   - https://www.ereg-association.eu/media/3115/version-111-ivi-messagebook.pdf
   - https://www.ereg-association.eu/media/3114/version-111-initialvehicleinformation-xsd-scheme.xsd
 
-The rows of the document name the fields of IVI 2.0 as well (`resources/layout/certificate.php`). The format is published
-as a draft:
+`resources/compiled/fields-2.php` is compiled from the schema and the message book of IVI 2.0: names, units and the texts of
+the codes. The rows of the document name these fields as well (`resources/layout/certificate.php`).
 
-- XML schema of IVI 2.0, draft of 2025-02-27:
-  https://www.ereg-association.eu/media/3101/version-20-draft-initial-vehicle-information-xsd-scheme.xsd
-- Readme: https://www.ereg-association.eu/media/3127/ivi-20-readme-v11.pdf
-- Guidelines: https://www.ereg-association.eu/media/3130/ivi-20-guidelines-initial-vehicle-information-v11.pdf
-- Overview of the changes: https://www.ereg-association.eu/media/3129/ivi-20-change-overview-v11.pdf
+- On the portal of EUCARIS for the eCoC, https://ecoc.eucaris.net/documentation: XML schema of IVI 2.0 of 2026-09-28, message
+  book in Excel format, version 3.1, overview of the transition from IVI 1.x to 2.0, version 2.6
 
 ## The labels: the regulations of the European Union
 
 - Numbered items (`resources/translations/items-*.php`): Annex VIII of Commission Implementing Regulation (EU) 2020/683, in
   the consolidated version of 2024-01-01:
-  https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:02020R0683-20240101 (`EN`, `FR` in place of `DE`)
-- Types of bodywork (`resources/translations/codes-*.php`): Annex I, Part C, of Regulation (EU) 2018/858:
-  https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32018R0858
+  https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:02020R0683-20240101 (`EN`, `FR` in place of `DE`), and item 48.3
+  from Commission Implementing Regulation (EU) 2025/1706: https://eur-lex.europa.eu/eli/reg_impl/2025/1706/oj
+- Types of bodywork and special purposes (`resources/translations/codes-*.php`): Annex I of Regulation (EU) 2018/858, in the
+  consolidated version of 2026-08-02:
+  https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:02018R0858-20260802
 
 The tables of point 49 of Annex VIII (the phases of the WLTP, charge sustaining and charge depleting, the electric ranges)
 are images in the Official Journal. Their words in `resources/translations/render-*.php` are read from these images; the

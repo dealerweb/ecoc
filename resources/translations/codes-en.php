@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 /*
  * What the codes of the data set mean, by the name of the list. English comes first from here and otherwise from the
- * message book (resources/compiled/fields.php): this file corrects its texts and adds the codes of IVI 2.0. The bodywork
- * codes are those of Regulation (EU) 2018/858, Annex I, Part C.
+ * message books (resources/compiled): this file corrects their texts where they read badly. The bodywork codes are those
+ * of Regulation (EU) 2018/858, Annex I, Part C.
  */
 
 return [
@@ -65,8 +65,8 @@ return [
         'CPILR' => 'C-pillar',
         'DPILR' => 'D-pillar',
     ],
-    'LocationMarkingsVehiclePartSide' => ['FRONT' => 'front side', 'LEFT' => 'left side', 'RIGHT' => 'right side', 'BACK' => 'back side'],
-    'LocationMarkingsVehiclePartSideSection' => ['LEFT' => 'left', 'MIDLE' => 'middle', 'RIGHT' => 'right', 'FRONT' => 'front', 'BACK' => 'back'],
+    'LocationMarkingsVehiclePartSide' => ['FRONTSIDE' => 'front side', 'LEFTSIDE' => 'left side', 'RIGHTSIDE' => 'right side', 'BACKSIDE' => 'back side'],
+    'LocationMarkingsVehiclePartSideSection' => ['LEFT' => 'left', 'MIDDLE' => 'middle', 'RIGHT' => 'right', 'FRONT' => 'front', 'BACK' => 'back'],
 
     'WorkingPrincipleCode' => [
         'CMPRA' => 'compressed air',
@@ -176,9 +176,35 @@ return [
         'DB' => 'Drawbar trailer',
         'DC' => 'Centre-axle trailer',
         'DE' => 'Rigid drawbar trailer',
+        'DF' => 'Link semi-trailer',
+        'DG' => 'Link drawbar trailer',
     ],
 
     'NEDCVerificationFactor' => ['0' => 'Conform', '1' => 'Not conform'],
 
     'CompletedAlteredCode' => ['A' => 'Altered', 'C' => 'Completed', 'B' => 'Completed and altered'],
+
+    'InterconnectionWithPoweredAxleConnectionCode' => ['TRANS' => 'transfer box', 'ELECT' => 'electronic', 'SHAFT' => 'shaft'],
+
+    'TyreTubeTypeCode' => ['TL' => 'tubeless', 'TT' => 'tube type', 'TUBLS' => 'tubeless', 'TUBTP' => 'tube type'],
+
+    'TyreTypeCode' => ['C' => 'Light commercial vehicle tyre (C)', 'LT' => 'Light commercial vehicle tyre (LT)', 'XL' => 'Extra load', 'FRT' => 'Free rolling tyre', 'HL' => 'High load capacity', 'MOPED' => 'Moped tyre'],
+
+    'ViennaCountryCode' => [
+        'EAK' => 'Kenya',
+        'EAT' => 'Tanzania',
+        'FO' => 'Faroe Islands',
+        'GCA' => 'Guatemala',
+        'IR' => 'Iran',
+        'LAO' => 'Laos',
+        'MD' => 'Moldova',
+        'PS' => 'Palestine',
+        'RH' => 'Haiti',
+        'RP' => 'Philippines',
+        'RUS' => 'Russia',
+        'SD' => 'Eswatini',
+        'SME' => 'Suriname',
+        'SYR' => 'Syria',
+        'WV' => 'Saint Vincent and the Grenadines',
+    ],
 ];

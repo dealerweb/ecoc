@@ -100,7 +100,7 @@ final class Certificate
     }
 
     /**
-     * The version of the format the data set is written in, as it states it: "1.9", "2.0.0".
+     * The version of the format the data set is written in, as it states it: "1.9", "2.0".
      */
     public function formatVersion(): ?string
     {

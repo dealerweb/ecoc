@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 /*
  * The labels of the items of the certificate of conformity: Annex VIII of Regulation (EU) 2020/683, consolidated version
- * of 1 January 2024, without the dots for the values and without the notes. The units stand with the values.
+ * of 1 January 2024, without the dots for the values and without the notes, and item 48.3 from Implementing Regulation
+ * (EU) 2025/1706. The units stand with the values.
  */
 
 return [
@@ -128,6 +129,7 @@ return [
     '48' => 'Exhaust emissions',
     '48.1' => 'Smoke corrected absorption coefficient',
     '48.2' => 'Declared maximum RDE values (if applicable)',
+    '48.3' => 'The relevant approval certificate number(s) and OBM family identifier(s)',
     '49' => 'CO2 emissions/fuel consumption/electric energy consumption',
     '49.1' => 'Cryptographic hash of the manufacturer’s records file',
     '49.2' => 'Zero emission heavy-duty vehicle',
@@ -136,7 +138,6 @@ return [
     '49.5' => 'Specific CO2 emissions (gCO2/tkm)',
     '49.5.1' => 'Specific CO2 emissions (gCO2/pkm)',
     '49.6' => 'Average payload',
-    '49.6.1' => 'Average occupancy (number of persons)',
     '49.7' => 'Vehicle subgroup/group',
     '49.8' => 'Cryptographic hash of the vehicle information file',
     '49.9' => 'Cargo volume',

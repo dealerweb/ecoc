@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- A fictional vehicle in IVI 2.0, valid against the published draft of the schema: no manufacturer issued this, and its signature is a placeholder. -->
-<ivi:InitialVehicleInformation xmlns:ivi="http://eu.ereg.initialvehicleinformation.v2" xmlns:sig="http://www.w3.org/2000/09/xmldsig#">
+<!-- A fictional vehicle in IVI 2.0, valid against the schema of 2026-09-28: no manufacturer issued this, and its signature is a placeholder. -->
+<InitialVehicleInformation xmlns="http://eu.ereg.initialvehicleinformation.v2">
   <Header>
-    <IviReferenceId>00000000-0000-0000-0000-000000000003</IviReferenceId>
-    <IviVersionNumberXsd>2.0.0</IviVersionNumberXsd>
+    <IviReferenceId>00000000-0000-4000-8000-000000000003</IviReferenceId>
+    <IviVersionNumberXsd>2.0</IviVersionNumberXsd>
     <IviVersionNumber>1</IviVersionNumber>
     <IviVersionDateTime>2026-11-04T09:30:00Z</IviVersionDateTime>
     <IntendedCountryRegistration>D</IntendedCountryRegistration>
@@ -30,7 +30,8 @@
     <VehicleCertified155Indicator>Y</VehicleCertified155Indicator>
     <VehicleCertified156Indicator>Y</VehicleCertified156Indicator>
     <ConsolidatedMaximum30MinutesPower>45.00</ConsolidatedMaximum30MinutesPower>
-    <ConsolidatedMaximumNetPowerElectricEngine>100.00</ConsolidatedMaximumNetPowerElectricEngine>
+    <ConsolidatedMaximumNetPowerElectric>100.00</ConsolidatedMaximumNetPowerElectric>
+    <ProvisionalTypeApprovalIndicator>N</ProvisionalTypeApprovalIndicator>
     <PureElectricVehicleIndicator>N</PureElectricVehicleIndicator>
     <ExhaustEmissionLevel>Euro 6 EB</ExhaustEmissionLevel>
     <ExhaustEmissionLatestRegulationNumber>715/2007*2023/443EB</ExhaustEmissionLatestRegulationNumber>
@@ -67,8 +68,8 @@
     </ManufacturerTable>
     <EURepresentativeGroup>
       <EURepresentativeName>Muster Vertretung GmbH</EURepresentativeName>
-      <EURepresentativeAdressLine1>Beispielweg 2</EURepresentativeAdressLine1>
-      <EURepresentativeAdressLine3>54321</EURepresentativeAdressLine3>
+      <EURepresentativeAddressLine1>Beispielweg 2</EURepresentativeAddressLine1>
+      <EURepresentativeAddressLine3>54321</EURepresentativeAddressLine3>
       <EURepresentativePlaceOfResidence>Beispielstadt</EURepresentativePlaceOfResidence>
       <EURepresentativeCountryOfResidence>Germany</EURepresentativeCountryOfResidence>
     </EURepresentativeGroup>
@@ -76,12 +77,12 @@
       <LocationMarkingsGroup>
         <LocationMarkingsSubject>VIN</LocationMarkingsSubject>
         <LocationMarkingsVehiclePart>PASCT</LocationMarkingsVehiclePart>
-        <LocationMarkingsVehiclePartSide>RIGHT</LocationMarkingsVehiclePartSide>
+        <LocationMarkingsVehiclePartSide>RIGHTSIDE</LocationMarkingsVehiclePartSide>
       </LocationMarkingsGroup>
       <LocationMarkingsGroup>
         <LocationMarkingsSubject>STAT</LocationMarkingsSubject>
         <LocationMarkingsVehiclePart>BPILR</LocationMarkingsVehiclePart>
-        <LocationMarkingsVehiclePartSide>LEFT</LocationMarkingsVehiclePartSide>
+        <LocationMarkingsVehiclePartSide>LEFTSIDE</LocationMarkingsVehiclePartSide>
       </LocationMarkingsGroup>
     </LocationMarkingsTable>
     <GeneralConstructionGroup>
@@ -97,6 +98,12 @@
       <ActualMass>1875</ActualMass>
       <TechnicallyPermissibleMaximumLadenMass>2300</TechnicallyPermissibleMaximumLadenMass>
       <AdditionalMassDueToBatteries>300</AdditionalMassDueToBatteries>
+      <MaximumStaticVerticalMassCouplingPointTable>
+        <MaximumStaticVerticalMassCouplingPointGroup>
+          <MechanicalCouplingNumberVerticalMass>1</MechanicalCouplingNumberVerticalMass>
+          <TechnicallyPermissibleMaximumStaticVerticalMassCouplingPoint>90</TechnicallyPermissibleMaximumStaticVerticalMassCouplingPoint>
+        </MaximumStaticVerticalMassCouplingPointGroup>
+      </MaximumStaticVerticalMassCouplingPointTable>
     </MassGroup>
     <DimensionGroup>
       <Wheelbase>2700</Wheelbase>
@@ -104,7 +111,7 @@
       <Width>1850</Width>
       <Height>1650</Height>
       <RearOverhang>900</RearOverhang>
-      <AerodynamicDeviceEquiped>NONE</AerodynamicDeviceEquiped>
+      <AerodynamicDeviceEquipped>NONE</AerodynamicDeviceEquipped>
     </DimensionGroup>
     <TowingBrakedTypeTrailTable>
       <TowingBrakedTypeTrailGroup>
@@ -189,7 +196,7 @@
     <ConfigurationDoorsGroup>
       <NumberOfDoorsLeft>2</NumberOfDoorsLeft>
       <NumberOfDoorsRight>2</NumberOfDoorsRight>
-      <NumberOfDoorsRear>1</NumberOfDoorsRear>
+      <NumberOfDoorsBack>1</NumberOfDoorsBack>
     </ConfigurationDoorsGroup>
     <WltpEmissionTestParametersGroup>
       <WltpEmissionTestMass>1950</WltpEmissionTestMass>
@@ -205,7 +212,6 @@
         <MechanicalCouplingNumber>1</MechanicalCouplingNumber>
         <MechanicalCouplingApprovalNumber>E1 55R-000000</MechanicalCouplingApprovalNumber>
         <MechanicalCouplingValueD>8.50</MechanicalCouplingValueD>
-        <TechnicallyPermissibleMaximumStaticVerticalMassCouplingPoint>90</TechnicallyPermissibleMaximumStaticVerticalMassCouplingPoint>
       </MechanicalCouplingGroup>
     </MechanicalCouplingTable>
     <EnergyConvertorTable>
@@ -248,7 +254,7 @@
               <WltpType1NumberOfParticles>1.20</WltpType1NumberOfParticles>
               <WltpType1NumberOfParticlesExponent>11</WltpType1NumberOfParticlesExponent>
             </TestWltpType1Group>
-            <TestWltpCO2Group>
+            <TestWltpCo2Group>
               <WltpCo2WeightedCombined>31</WltpCo2WeightedCombined>
               <WltpCo2ChargeSustainingLow>161</WltpCo2ChargeSustainingLow>
               <WltpCo2ChargeSustainingMedium>122</WltpCo2ChargeSustainingMedium>
@@ -256,7 +262,7 @@
               <WltpCo2ChargeSustainingExtraHigh>143</WltpCo2ChargeSustainingExtraHigh>
               <WltpCo2ChargeSustainingCombined>132</WltpCo2ChargeSustainingCombined>
               <WltpCo2ChargeDepletingCombined>7</WltpCo2ChargeDepletingCombined>
-            </TestWltpCO2Group>
+            </TestWltpCo2Group>
             <TestWltpFuelConsumptionGroup>
               <WltpFuelConsumptionWeightedCombined>1.4</WltpFuelConsumptionWeightedCombined>
               <WltpFuelConsumptionChargeSustainingLow>7.1</WltpFuelConsumptionChargeSustainingLow>
@@ -312,7 +318,7 @@
     <EcoInnovationsTable>
       <EcoInnovationsGroup>
         <EcoInnovationCountry>e1</EcoInnovationCountry>
-        <GeneralCodeEcoInnovation>e1 00</GeneralCodeEcoInnovation>
+        <GeneralCodeEcoInnovation>29</GeneralCodeEcoInnovation>
       </EcoInnovationsGroup>
     </EcoInnovationsTable>
     <AdvancedSafetySystemsTable>
@@ -336,8 +342,8 @@
       </RemarkGroup>
     </RemarkTable>
   </CocDataGroup>
-  <sig:Signature>
-    <sig:SignedInfo/>
-    <sig:SignatureValue>AAAA</sig:SignatureValue>
-  </sig:Signature>
-</ivi:InitialVehicleInformation>
+  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+    <SignedInfo/>
+    <SignatureValue>AAAA</SignatureValue>
+  </Signature>
+</InitialVehicleInformation>

@@ -10,6 +10,7 @@ declare(strict_types=1);
  * A row: [number, template or list of templates (one line each), options]
  *   {A|B}    the value of field A or B (the name in IVI 1.x | the name in IVI 2.0), its code explained
  *   {#A}     a number      {@A} a date      {=A} a code and what it means      {^A} digits as superscript
+ *   {~A}     the value again, also when another row shows it: the country of a mass; only beside a field of its own
  *   [...]    an optional part, left out when a field in it has no value
  *   %key%    the text word.key of the language
  * Options:
@@ -17,8 +18,12 @@ declare(strict_types=1);
  *   all         every occurrence of the field, one line each
  *   distinct    with all: the same value only once
  *   root        the field is looked up in the whole data set, also in a row of an engine or a fuel
- *   axles       a template filled for every axle: "1: 780 kg, 2: 720 kg"; spacing: the axles are named "1-2"
+ *   axles       a template filled for every axle: "1: 780 kg · 2: 720 kg", a line for every axle when one has several values;
+ *               spacing: the axles are named "1-2"
  *   axleGroups  the same for every axle group
+ *   groups      the row once for every group of this name, one line each: the fields of a line belong together; with axles
+ *               or axleGroups the groups within every axle
+ *   act         the row only for vehicles of this regulation: where a field has another unit there
  *   pairs       a list of [label, template]: a label starting with a colon is the text word.<key>
  *   expected    the model of the certificate provides the row for this powertrain (see the list "expected"): when the
  *               data set has no value, the row stays with an orange hyphen
@@ -28,6 +33,14 @@ declare(strict_types=1);
 $range = static fn (string $min, string $max, string $unit): string => '{#' . $min . '} - {#' . $max . '} ' . $unit;
 
 $particles = static fn (string $number, string $exponent, string $unit): string => '{#' . $number . '}[ × 10{^' . $exponent . '}] ' . $unit;
+
+$couplingValues = static fn (string $prefix): array => [
+    ['D', '{#' . $prefix . 'ValueD} kN'],
+    ['DC', '{#' . $prefix . 'ValueDc} kN'],
+    ['V', '{#' . $prefix . 'ValueV} kN'],
+    ['S', '{#' . $prefix . 'ValueS} kg'],
+    ['U', '{#' . $prefix . 'ValueU} t'],
+];
 
 return [
     'parts' => [
@@ -58,6 +71,7 @@ return [
                 ['', '{@RevisionDate}', 'label' => 'revision_date'],
                 ['', '{TypeApprovalTypeCode|TypeApprovalType}', 'label' => 'approval_type'],
                 ['', '{ProvisionalApprovalIndicator|ProvisionalTypeApprovalIndicator}', 'label' => 'approval_provisional'],
+                ['', '{ProvisionalApprovalTerritoryCountry}', 'all' => true, 'label' => 'approval_territory'],
                 ['', '{StageOfCompletionCode|StageOfCompletion}', 'label' => 'stage'],
                 ['', '{RightLeftHandTrafficCode|RightLeftHandTraffic}', 'label' => 'traffic'],
                 ['', '{MetricImperialSpeedometerCode|MetricImperialSpeedometer}', 'label' => 'speedometer'],
@@ -83,18 +97,20 @@ return [
             ],
             'dimensions' => [
                 ['4', ['{Wheelbase} mm', $range('WheelbaseMinimum|WheelbaseAdjustableMin', 'WheelbaseMaximum|WheelbaseAdjustableMax', 'mm')]],
-                ['4.1', 'axles' => '{AxleSpacing} mm', 'spacing' => true],
+                ['4.1', 'axles' => '[{AxleSpacing} mm][ ({#AxleSpacingMinimum|AxleSpacingAdjustableMin} - {#AxleSpacingMaximum|AxleSpacingAdjustableMax} mm)]', 'spacing' => true],
+                ['4.1', ['{DistanceCouplPointFirstAxle|DistanceCouplingPointFirstAxle} mm', $range('DistanceCouplPointFirstAxleMin|DistanceCouplingPointFirstAxleAdjustableMin', 'DistanceCouplPointFirstAxleMax|DistanceCouplingPointFirstAxleAdjustableMax', 'mm')], 'label' => 'spacing_coupling', 'groups' => 'MechanicalCouplingGroup'],
+                ['4.1', ['{DistanceCouplPointLastAxle} mm', $range('DistanceCouplPointLastAxleMin', 'DistanceCouplPointLastAxleMax', 'mm')], 'label' => 'spacing_coupling_last', 'groups' => 'MechanicalCouplingGroup'],
                 ['5', ['{Length} mm', $range('LengthMinimum|LengthAdjustableMin', 'LengthMaximum|LengthAdjustableMax', 'mm')]],
                 ['5.1', ['{MaximumPermissibleLength} mm', $range('MaximumPermissibleLengthMin', 'MaximumPermissibleLengthMax', 'mm')]],
-                ['5.2', '{ElongatedCabInd|ElongatedCabineIndicator}'],
-                ['5.3', '{AerodynamicVehCode|AerodynamicDeviceEquiped}'],
+                ['5.2', '{ElongatedCabInd|ElongatedCabIndicator}'],
+                ['5.3', '{AerodynamicVehCode|AerodynamicDeviceEquipped}'],
                 ['6', ['{Width} mm', $range('WidthMinimum|WidthAdjustableMin', 'WidthMaximum|WidthAdjustableMax', 'mm')]],
                 ['6.1', ['{MaximumPermissibleWidth} mm', $range('MaximumPermissibleWidthMin', 'MaximumPermissibleWidthMax', 'mm')]],
                 ['7', ['{Height} mm', $range('HeightMinimum|HeightAdjustableMin', 'HeightMaximum|HeightAdjustableMax', 'mm')]],
-                ['7.1', '{MaximumPermissibleHeight} mm'],
-                ['8', ['{FifthWheelLead} mm', $range('FifthWheelLeadMinimum', 'FifthWheelLeadMaximum', 'mm')]],
-                ['9', ['{DistFrontVehCentreCouplDev|DistanceFrontEndCentreCoupling} mm', $range('DistFrontVehCentreCouplDevMin|DistanceFrontEndCentreCouplingAdjustableMin', 'DistFrontVehCentreCouplDevMax|DistanceFrontEndCentreCouplingAdjustableMax', 'mm')]],
-                ['10', ['{DistCentreCouplDevRearVeh|DistanceCentreCouplingRearEnd} mm', $range('DistCentreCouplDevRearVehMin|DistanceCentreCouplingRearEndAdjustableMin', 'DistCentreCouplDevRearVehMax|DistanceCentreCouplingRearEndAdjustableMax', 'mm')]],
+                ['7.1', ['{MaximumPermissibleHeight} mm', $range('MaximumPermissibleHeightMin', 'MaximumPermissibleHeightMax', 'mm')]],
+                ['8', ['{FifthWheelLead|DistanceCentreCouplingDeviceLastAxle} mm', $range('FifthWheelLeadMinimum|DistanceCentreCouplingDeviceLastAxleAdjustableMin', 'FifthWheelLeadMaximum|DistanceCentreCouplingDeviceLastAxleAdjustableMax', 'mm')], 'groups' => 'MechanicalCouplingGroup'],
+                ['9', ['{DistFrontVehCentreCouplDev|DistanceFrontEndCentreCoupling} mm', $range('DistFrontVehCentreCouplDevMin|DistanceFrontEndCentreCouplingAdjustableMin', 'DistFrontVehCentreCouplDevMax|DistanceFrontEndCentreCouplingAdjustableMax', 'mm')], 'groups' => 'MechanicalCouplingGroup'],
+                ['10', ['{DistCentreCouplDevRearVeh|DistanceCentreCouplingRearEnd} mm', $range('DistCentreCouplDevRearVehMin|DistanceCentreCouplingRearEndAdjustableMin', 'DistCentreCouplDevRearVehMax|DistanceCentreCouplingRearEndAdjustableMax', 'mm')], 'groups' => 'MechanicalCouplingGroup'],
                 ['11', ['{LengthOfTheLoadingArea|LengthLoadingArea} mm', $range('LengthOfTheLoadingAreaMinimum|LengthLoadingAreaAdjustableMin', 'LengthOfTheLoadingAreaMaximum|LengthLoadingAreaAdjustableMax', 'mm')]],
                 ['12', ['{RearOverhang} mm', $range('RearOverhangMinimum|RearOverhangAdjustableMin', 'RearOverhangMaximum|RearOverhangAdjustableMax', 'mm')]],
                 ['12.1', '{MaximumPermissibleRearOverhang} mm'],
@@ -102,61 +118,66 @@ return [
             'masses' => [
                 ['13', ['{MassOfTheVehicleInRunningOrder|MassInRunningOrder} kg', $range('UnladenMassVehRunningOrderMin|MassInRunningOrderVariableMin', 'UnladenMassVehRunningOrderMax|MassInRunningOrderVariableMax', 'kg')]],
                 ['13.1', 'axles' => '{DistrOfMassRunningOrderAxle|DistributionMassRunningOrderAxle} kg'],
+                ['13.1', '{DistrOfMassRunningOrderCoupl|MechanicalCouplingDistributionMassRunningOrder} kg', 'all' => true, 'label' => 'mass_coupling'],
                 ['13.2', '{ActualMassOfTheVehicle|ActualMass} kg'],
                 ['13.3', '{AddMassAlternativePropulsion|AdditionalMassAlternativePropulsion} kg'],
                 ['', '{AdditionalMassDueToBatteries} kg', 'label' => 'mass_batteries'],
                 ['14', '{MassIncompleteVehRunningOrder|MassInRunningOrderIncomplete} kg'],
                 ['14.1', 'axles' => '{DistribMassIncompleteVehAxle|DistributionMassIncompleteAxle} kg'],
+                ['14.1', '{DistribMassIncompleteVehCoupl} kg', 'all' => true, 'label' => 'mass_coupling'],
                 ['15', '{MinMassVehCompleted|MinimumMassCompleted} kg'],
                 ['15.1', 'axles' => '{DistribMassCompletedVehAxleMin|MinimalPermissibleDistributionMassCompletedAxle} kg'],
+                ['15.1', '{DistrMassCompletedVehCouplMin|MechanicalCouplingMinimumDistributionMassCompleted} kg', 'all' => true, 'label' => 'mass_coupling'],
                 ['16.1', ['{TechnPermMaxLadenMass|TechnicallyPermissibleMaximumLadenMass} kg', $range('TechPermMaxLadenMassMin|TechnicallyPermissibleMaximumLadenMassVariableMin', 'TechPermMaxLadenMassMax|TechnicallyPermissibleMaximumLadenMassVariableMax', 'kg')]],
-                ['16.2', 'axles' => '{TechnicallyPermMassAxle|TechnicallyPermissibleMassAxle} kg'],
+                ['16.2', 'axles' => '[{TechnicallyPermMassAxle|TechnicallyPermissibleMassAxle} kg][ ({#TechnicallyPermissibleMassAxleAdjustableMin} - {#TechnicallyPermissibleMassAxleAdjustableMax} kg)]'],
                 ['16.3', 'axleGroups' => '{TechPermMassAxleGroup|TechnicallyPermissibleMassAxleGroup} kg'],
                 ['16.4', '{TechnPermMaxMassCombination} kg'],
-                ['17.1', '{MaxPermLadenMassInternational|MaxPermLadenMassNational|InServiceMaximumPermissibleLadenMass} kg', 'all' => true],
-                ['17.2', 'axles' => '{MaxPermLadenMassAxleInt|MaxPermLadenMassAxleNational|InServiceMaximumPermissibleLadenMassAxle} kg'],
-                ['17.3', 'axleGroups' => '{MaxPermLadenMassAxleGrInt|MaxPermLadenMassAxleGrNat|InServiceMaximumPermissibleLadenMassAxleGroup} kg'],
-                ['17.4', '{MaxPermMassCombinationInt|MaxPermMassCombinationNational|InServiceMaximumPermissibleMassCombination} kg', 'all' => true],
-                ['18.1', '{TechPermMaxTowMassDrawbarTrail} kg'],
-                ['18.2', '{TechPermMaxTowMassSemiTrailer} kg'],
-                ['18.3', '{TechPermMaxTowMassCentAxTrail} kg'],
-                ['18.3.1', '{TechPermMaxTowMassRigidTrail} kg'],
-                ['18.4', '{TechPermMaxTowMassUnbrTrailer} kg'],
-                ['18', '{TechPermMaxTowMassBrakedTrail} kg', 'label' => 'towing_braked'],
+                ['block' => 'combination'],
+                ['17.1', '{MaxPermLadenMassInternational|MaxPermLadenMassNational|InServiceMaximumPermissibleLadenMass} kg[ ({MaxPermMassNatTraffCountryCode|InServiceMaximumPermissibleMassCountry})][ ({MaxPermMassNatTraffMemStateNr})][ ({MaxPermMassIntTrafficRegul|InServiceMaximumPermissibleMassTrafficRegulation})]', 'all' => true, 'groups' => 'InServiceMaxMassIntGroup|InServiceMaxMassNatGroup|InServiceMaximumMassGroup'],
+                ['17.2', 'axles' => '{MaxPermLadenMassAxleInt|MaxPermLadenMassAxleNational|InServiceMaximumPermissibleLadenMassAxle} kg[ ({MaxPermLadenMassAxleCountrCode|InServiceMaximumPermissibleLadenMassAxleCountry})][ ({MaxPermLadenMassAxleMemStateNr})][ ({MaxPermLadenMassTrafficRegul|InServiceMaximumPermissibleLadenMassAxleTrafficRegulation})]', 'groups' => 'MaxPermLadenMassAxleIntGroup|MaxPermLadenMassAxleNatGroup|InServiceMaximumPermissibleLadenMassAxleGroup'],
+                ['17.3', 'axleGroups' => '{MaxPermLadenMassAxleGrInt|MaxPermLadenMassAxleGrNat|InServiceMaximumPermissibleAxleGroupLadenMass} kg[ ({MaxPermLadenMassAxleGrCCode|InServiceMaximumPermissibleLadenMassAxleGroupCountry})][ ({MaxPermLadenMassAxleGrMStateNr})][ ({MaxPermLadenMassGrTrafficRegul|InServiceMaximumPermissibleLadenMassAxleGroupTrafficRegulation})]', 'groups' => 'MaxPermLadenMassAxleGrIntGroup|MaxPermLadenMassAxleGrNatGroup|InServiceMaximumPermissibleLadenMassAxleGroupGroup'],
+                ['17.4', '{MaxPermMassCombinationInt|MaxPermMassCombinationNational|InServiceMaximumPermissibleMassCombination} kg[ ({~MaxPermMassNatTraffCountryCode|InServiceMaximumPermissibleMassCountry})][ ({~MaxPermMassNatTraffMemStateNr})][ ({~MaxPermMassIntTrafficRegul|InServiceMaximumPermissibleMassTrafficRegulation})]', 'all' => true, 'groups' => 'InServiceMaxMassIntGroup|InServiceMaxMassNatGroup|InServiceMaximumMassGroup'],
+                ['18.1', '{TechPermMaxTowMassDrawbarTrail} kg', 'all' => true],
+                ['18.2', '{TechPermMaxTowMassSemiTrailer} kg', 'all' => true],
+                ['18.3', '{TechPermMaxTowMassCentAxTrail} kg', 'all' => true],
+                ['18.3.1', '{TechPermMaxTowMassRigidTrail} kg', 'all' => true],
+                ['18.4', '{TechPermMaxTowMassUnbrTrailer} kg', 'all' => true],
+                ['18', '{TechPermMaxTowMassBrakedTrail} kg', 'all' => true, 'label' => 'towing_braked'],
                 ['block' => 'towing'],
-                ['19', '{TechPermMaxStatVertMassCouplPt|TechPermMaxStatMassCouplPoint|TechnicallyPermissibleMaximumStaticVerticalMassCouplingPoint} kg'],
+                ['19', '{TechPermMaxStatVertMassCouplPt|TechPermMaxStatMassCouplPoint|TechnicallyPermissibleMaximumStaticVerticalMassCouplingPoint} kg', 'all' => true],
             ],
             'powerplant' => [
                 ['block' => 'engines'],
-                ['27.3', '{#MaximumNetPowerElectricEngine|ConsolidatedMaximumNetPowerElectricEngine} kW', 'label' => 'power_net_total'],
+                ['27.3', '{#MaximumNetPowerElectricEngine|ConsolidatedMaximumNetPowerElectric} kW', 'label' => 'power_net_total'],
                 ['27.4', '{#MaximumContinuousRatedPowerVeh|ConsolidatedMaximum30MinutesPower} kW', 'label' => 'power_30min_total'],
                 ['', '{#Maximum15MinutesPower} kW', 'label' => 'power_15min'],
                 ['', '{#MaximumHourlyPower} kW', 'label' => 'power_hourly'],
                 ['28', '{GearboxTypeCode|GearboxType}'],
                 ['', '{NumberOfRatiosFront}[ / {NumberOfRatiosRear}]', 'label' => 'gear_count'],
                 ['block' => 'gears'],
-                ['28.1.1', '{#FinalDriveRatioVeh|FinalDriveVehicleRatio|FinalDriveRatio}', 'all' => true],
+                ['28.1.1', '{#FinalDriveRatioVeh|FinalDriveVehicleRatio}', 'all' => true],
+                ['28.1.2', '{#FinalDriveRatio}', 'all' => true],
             ],
             'speed' => [
                 ['29', '{#MaximumSpeed|MaximumSpeedNonPropulsion} km/h', 'all' => true, 'distinct' => true],
             ],
             'axles' => [
-                ['30', 'axles' => '{AxleTrack} mm'],
+                ['30', 'axles' => '[{AxleTrack} mm][ ({#AxleTrackAdjustableMin} - {#AxleTrackAdjustableMax} mm)]'],
                 ['30.1', '{TrackOfEachSteeredAxle} mm', 'all' => true],
                 ['30.2', '{TrackOfAllOtherAxles} mm', 'all' => true],
                 ['block' => 'axleSuspension'],
                 ['block' => 'tyres'],
             ],
             'brakes' => [
-                ['36', '{TrailerBrakeConnectionsCode|TrailerBrakeControlSystemTechnology}[, {TrailerBrakeTechnologyConnectionsType}]'],
-                ['37', ['{PressFeedLineBraking|TrailerBrakePressFeedLineBraking} kPa', '{#PressFeedLineTwoLineBraking} bar', '{#PressFeedLineSingleLineBraking} bar']],
+                ['36', '{TrailerBrakeConnectionsCode|TrailerBrakeControlSystemTechnology}[, {TrailerBrakeTechnologyConnectionsType}]', 'groups' => 'TrailerBrakeGroup'],
+                ['37', ['{#PressFeedLineBraking|TrailerBrakePressFeedLineBraking} kPa', '{#PressFeedLineTwoLineBraking} bar', '{#PressFeedLineSingleLineBraking} bar'], 'all' => true, 'groups' => 'TrailerBrakeGroup'],
             ],
             'bodywork' => [
-                ['38', '{=CodeForBodywork}[, {NumberForBodywork|CodeForBodyworkSupplement}]'],
+                ['block' => 'bodywork'],
                 ['39', '{ClassOfVehicleCode|VehicleClass}', 'all' => true],
                 ['40', '{PrimaryColourCode}[ / {SecondaryColourCode}]'],
                 ['40', '{Colour}', 'all' => true],
-                ['41', '{NumberOfDoors}[ ({ConfigurationOfDoors})][, {NumberOfDoorsLeft}L][, {NumberOfDoorsRight}R][, {NumberOfDoorsRear}RE][, {NumberOfDoorsFront}FR]'],
+                ['41', '{NumberOfDoors}[ ({ConfigurationOfDoors})][, {NumberOfDoorsLeft}L][, {NumberOfDoorsRight}R][, {NumberOfDoorsBack}RE][, {NumberOfDoorsFront}FR]'],
                 ['42', '{NrOfSeatingPositions|NumberOfSeatingPositionsIncludingDriver}'],
                 ['42.1', '{SeatForUseOnlyWhenTheVehStat|NumberOfSeatsStationaryUseOnly}'],
                 ['42.2', '{NrOfPassSeatingPosLowerDeck|NumberOfSeatingPositionsLowerDeck} / {NrOfPassSeatingPosUpperDeck|NumberOfSeatingPositionsUpperDeck}'],
@@ -165,14 +186,21 @@ return [
             ],
             'coupling' => [
                 ['44', '{ApprovalNrCouplingDevice|MechanicalCouplingApprovalNumber|ApprovalMarkCouplingDevice|MechanicalCouplingApprovalMark}', 'all' => true],
-                ['45', '{TypeOfCouplingDeviceFitted|MechanicalCouplingTypeCanBeFitted|MechanicalCouplingClassCanBeFitted}', 'all' => true],
-                ['45.1', 'pairs' => [
+                ['44', '[{MechanicalCouplingPartsApprovalNumber}][ {MechanicalCouplingPartsApprovalMark}]', 'groups' => 'MechanicalCouplingPartsGroup', 'label' => 'coupling_parts'],
+                ['45', '{TypeOfCouplingDeviceFitted}', 'all' => true],
+                ['45', '[{MechanicalCouplingCanBeFittedType}][ {MechanicalCouplingCanBeFittedClass}][, {MechanicalCouplingCanBeFittedApprovalNumber}][, {MechanicalCouplingCanBeFittedApprovalMark}]', 'groups' => 'MechanicalCouplingCanBeFittedGroup'],
+                ['45.1', 'groups' => 'MechanicalCouplingGroup', 'pairs' => [
                     ['D', '{#CouplingCharacteristicValueD|MechanicalCouplingValueD} kN'],
-                    ['DC', '{#CouplingCharacteristicValueDC} kN'],
+                    ['DC', '{#CouplingCharacteristicValueDC|MechanicalCouplingValueDc} kN'],
                     ['V', '{#CouplingCharacteristicValueV|MechanicalCouplingValueV} kN'],
                     ['S', '{#CouplingCharacteristicValueS|MechanicalCouplingValueS} kg'],
-                    ['U', '{#CouplingCharacteristicValueU|MechanicalCouplingValueU} kg'],
+                    ['U', '{#CouplingCharacteristicValueU} kg'],
+                    ['U', '{#MechanicalCouplingValueU} t'],
+                    [':trailer_mass', '{#CouplCharTechnPermTrailerMass} kg'],
+                    [':trailer_mass', '{#MechanicalCouplingTechnicallyPermissibleTowableMass} t'],
                 ]],
+                ['45.1', 'groups' => 'MechanicalCouplingPartsGroup', 'label' => 'coupling_parts_values', 'pairs' => $couplingValues('MechanicalCouplingParts')],
+                ['45.1', 'groups' => 'MechanicalCouplingCanBeFittedGroup', 'label' => 'coupling_fittable_values', 'pairs' => $couplingValues('MechanicalCouplingCanBeFitted')],
             ],
             'environment' => [
                 ['block' => 'environment'],
@@ -183,7 +211,7 @@ return [
                 ['49.5', '{#SpecificCO2Emissions|SpecificCo2EmissionsMass} gCO2/tkm', 'all' => true],
                 ['49.5.1', '{#SpecificCO2EmissionsPerson|SpecificCo2EmissionsPerson} gCO2/pkm', 'all' => true],
                 ['49.6', '{#AveragePayload} t'],
-                ['49.6.1', '{#AverageOccupancy}'],
+                ['49.6', '{#AverageOccupancy}', 'label' => 'average_occupancy'],
                 ['49.7', '{VehicleGroup}[ / {VehicleSubgroupGroup|VehicleSubgroup}]'],
                 ['49.8', '{CryptHashVehicleFile|CryptographicHashVehicleFile}'],
                 ['49.9', '{#CargoVolume} m³'],
@@ -194,9 +222,11 @@ return [
             ],
             'misc' => [
                 ['50', '{TypeApprTranspDangerGoodsInd|TypeApprovalTransportDangerousGoodsIndicator}'],
-                ['', '{TypeApprTranspDangerGoodsClass|TypeApprovalTransportDangerousGoodsClass}', 'all' => true, 'label' => 'dangerous_goods_class'],
-                ['51', '{CodeForBodyworkSpecPurpVeh|SpecialPurposeDesignation}'],
+                ['', '{=TypeApprTranspDangerGoodsClass|TypeApprovalTransportDangerousGoodsClass}', 'all' => true, 'label' => 'dangerous_goods_class'],
+                ['51', '{CodeForBodyworkSpecPurpVeh|SpecialPurposeDesignation}', 'all' => true],
                 ['block' => 'remarks'],
+                ['52', '{MaximumAuthorisedDimensionsDerogationIndicator}', 'label' => 'dimensions_derogation'],
+                ['52', '{IndivisibleLoadInd}', 'label' => 'indivisible_load'],
                 ['', '{AdditionalInformation}', 'label' => 'additional_information'],
                 ['', '{Exemptions}', 'label' => 'exemptions'],
                 ['', '{RemarksExceptions}', 'label' => 'exemptions'],
@@ -215,8 +245,10 @@ return [
         ['', '{EngineEcTypeApprovalNumber|EnergyConvertorTypeApprovalNumber}', 'label' => 'engine_approval'],
         ['', '{ElectricEngineIndicator}', 'label' => 'electric_engine'],
         ['22', '{WorkingPrincipleCode|WorkingPrinciple}[, {EngineCycleCode|CombustionCycle}]'],
-        ['23', '{PureElectricVehIndicator|PureElectricVehicleIndicator|PureElectricIndicator}', 'root' => true],
-        ['', '{HybridVehIndicator|HybridIndicator}', 'label' => 'hybrid', 'root' => true],
+        ['23', '{PureElectricVehIndicator|PureElectricVehicleIndicator}', 'root' => true],
+        ['23', '{PureElectricIndicator}'],
+        ['', '{HybridVehIndicator}', 'label' => 'hybrid', 'root' => true],
+        ['', '{HybridIndicator}', 'label' => 'hybrid'],
         ['', '{OffVehicleChargingVehInd|OffVehicleChargingIndicator}', 'label' => 'off_vehicle_charging', 'root' => true],
         ['23.1', '{ClassOfHybridVehicleCode|ClassHybridVehicle}', 'root' => true],
         ['23.1', '{CategoryHybridElectricVehicle}', 'label' => 'hybrid_category', 'root' => true],
@@ -270,17 +302,42 @@ return [
             [':particles_number', $particles('TestprocWltpType1NrOfPart|WltpType1NumberOfParticles', 'TestprocWltpType1ExPart|WltpType1NumberOfParticlesExponent', '1/km')],
         ]],
         ['', 'label' => 'test_type1', 'pairs' => [
-            ['CO', '{#TestprocType1CO|TypeICo} g/km'],
-            ['THC', '{#TestprocType1HC|TypeIThc} g/km'],
-            ['NMHC', '{#TestprocType1NMHC|TypeINmhc} g/km'],
-            ['NOx', '{#TestprocType1NOx|TypeINox} g/km'],
-            ['THC + NOx', '{#TestprocType1HC_NOx|TypeIHcNox} g/km'],
-            [':particulates_mass', '{#TestprocType1Particulates|TypeIParticulates} g/km'],
+            ['CO', '{#TestprocType1CO} g/km'],
+            ['THC', '{#TestprocType1HC} g/km'],
+            ['NMHC', '{#TestprocType1NMHC} g/km'],
+            ['NOx', '{#TestprocType1NOx} g/km'],
+            ['THC + NOx', '{#TestprocType1HC_NOx} g/km'],
+            [':particulates_mass', '{#TestprocType1Particulates} g/km'],
             [':particles_number', $particles('TestprocType1NrOfParticles', 'TestprocType1ExponentParticles', '1/km')],
         ]],
-        ['', 'label' => 'test_whsc', 'pairs' => [
+        ['', 'label' => 'test_type_i', 'pairs' => [
+            ['CO', '{#TypeICo} mg/km'],
+            ['THC', '{#TypeIThc} mg/km'],
+            ['NMHC', '{#TypeINmhc} mg/km'],
+            ['NOx', '{#TypeINox} mg/km'],
+            ['THC + NOx', '{#TypeIHcNox} mg/km'],
+            [':particulates_mass', '{#TypeIParticulates} mg/km'],
+        ]],
+        ['', 'label' => 'test_whsc', 'act' => '167/2013', 'pairs' => [
+            ['CO', '{#WhscCo} g/kWh'],
+            ['THC', '{#WhscThc} g/kWh'],
+            ['NOx', '{#WhscNox} g/kWh'],
+            ['THC + NOx', '{#WhscHcNox} g/kWh'],
+            [':particulates_mass', '{#WhscParticulates} g/kWh'],
+            [':particles_number', $particles('WhscNumberOfParticles', 'WhscNumberOfParticlesExponent', '1/kWh')],
+            ['CO2', '{#WhscCo2} g/kWh'],
+        ]],
+        ['', 'label' => 'test_whtc', 'act' => '167/2013', 'pairs' => [
+            ['CO', '{#WhtcCo} g/kWh'],
+            ['NOx', '{#WhtcNox} g/kWh'],
+            ['THC', '{#WhtcThc} g/kWh'],
+            ['THC + NOx', '{#WhtcHcNox} g/kWh'],
+            [':particulates_mass', '{#WhtcParticulates} g/kWh'],
+            [':particles_number', $particles('WhtcNumberOfParticles', 'WhtcNumberOfParticlesExponent', '1/kWh')],
+        ]],
+        ['', 'label' => 'test_whsc', 'act' => '2018/858', 'pairs' => [
             ['CO', '{#TestprocWhscCO|WhscCo} mg/kWh'],
-            ['THC', '{#TestprocWhscTHC|WhscHc} mg/kWh'],
+            ['THC', '{#TestprocWhscTHC|WhscThc} mg/kWh'],
             ['NMHC', '{#TestprocWhscNMHC|WhscNmhc} mg/kWh'],
             ['NOx', '{#TestprocWhscNOx|WhscNox} mg/kWh'],
             ['THC + NOx', '{#TestprocWhscHC_NOx|WhscHcNox} mg/kWh'],
@@ -290,11 +347,11 @@ return [
             [':particles_number', $particles('TestprocWhscNumberOfParticles|WhscNumberOfParticles', 'TestprocWhscExponentParticles|WhscNumberOfParticlesExponent', '1/kWh')],
             ['CO2', '{#TestprocWhscCO2|WhscCo2} g/kWh'],
         ]],
-        ['', 'label' => 'test_whtc', 'pairs' => [
+        ['', 'label' => 'test_whtc', 'act' => '2018/858', 'pairs' => [
             ['CO', '{#TestprocWhtcCO|WhtcCo} mg/kWh'],
             ['NOx', '{#TestprocWhtcNOx|WhtcNox} mg/kWh'],
             ['NMHC', '{#TestprocWhtcNMHC|WhtcNmhc} mg/kWh'],
-            ['THC', '{#TestprocWhtcTHC|WhtcHc} mg/kWh'],
+            ['THC', '{#TestprocWhtcTHC|WhtcThc} mg/kWh'],
             ['CH4', '{#TestprocWhtcCH4|WhtcCh4} mg/kWh'],
             ['NH3', '{#TestprocWhtcNH3|WhtcNh3} ppm'],
             ['THC + NOx', '{#TestprocWhtcHC_NOx|WhtcHcNox} mg/kWh'],
@@ -302,6 +359,28 @@ return [
             [':particles_number', $particles('TestprocWhtcNumberOfParticles|WhtcNumberOfParticles', 'TestprocWhtcExponentParticles|WhtcNumberOfParticlesExponent', '1/kWh')],
             ['CO2', '{#TestprocWhtcCO2} g/kWh'],
         ]],
+        ['', 'label' => 'test_esc', 'pairs' => [
+            [':stage', '{TestprocEscStage}'],
+            ['CO', '{#TestprocEscCO} g/kWh'],
+            ['THC', '{#TestprocEscTHC} g/kWh'],
+            ['NOx', '{#TestprocEscNOx} g/kWh'],
+            [':particulates_mass', '{#TestprocEscParticulates} g/kWh'],
+            [':particles_number', $particles('TestprocEscNumberOfParticles', 'TestprocEscExponentParticles', '1/kWh')],
+            ['CO2', '{#TestprocEscCO2} g/kWh'],
+        ]],
+        ['', 'label' => 'test_etc', 'pairs' => [
+            [':stage', '{TestprocEtcStage}'],
+            ['CO', '{#TestprocEtcCO} g/kWh'],
+            ['THC', '{#TestprocEtcTHC} g/kWh'],
+            ['NMHC', '{#TestprocEtcNMHC} g/kWh'],
+            ['CH4', '{#TestprocEtcCH4} g/kWh'],
+            ['NOx', '{#TestprocEtcNOx} g/kWh'],
+            ['THC + NOx', '{#TestprocEtcHC_NOx} g/kWh'],
+            [':particulates_mass', '{#TestprocEtcParticulates} g/kWh'],
+            [':particles_number', $particles('TestprocEtcNumberOfParticles', 'TestprocEtcExponentParticles', '1/kWh')],
+            ['CO2', '{#TestprocEtcCO2} g/kWh'],
+        ]],
+        ['', '{#TestprocElrSmokeValue} m⁻¹', 'label' => 'test_elr'],
         ['48.1', '{#SmokeCorrectedAbsorptionCoeff|SmokeCorrectedAbsorptionCoefficient} m⁻¹'],
         ['48.2', 'label' => 'rde_complete', 'pairs' => [
             ['NOx', '{#TestprocRdeCompleteRdeNOx|RdeCompleteNox} mg/km'],
@@ -311,6 +390,7 @@ return [
             ['NOx', '{#TestprocRdeUrbanRdeNOx|RdeUrbanNox} mg/km'],
             [':particles_number', $particles('TestprocRdeUrbanRdeNrOfPart|RdeUrbanNumberOfParticles', 'TestprocRdeUrbanRdeExpPart|RdeUrbanNumberOfParticlesExponent', '1/km')],
         ]],
+        ['48.3', '{SubjectApprovalCertificateNumber}', 'all' => true, 'root' => true],
         ['table' => 'wltp'],
         ['table' => 'nedc'],
         ['49.2', '{WLTPElectricRangePureElectric|WltpPureElectricRange} km', 'label' => 'range_pure', 'expected' => 'electric'],
@@ -331,7 +411,7 @@ return [
     // The eco-innovations of the whole vehicle: the block "environment" sets them in the order of the numbers with the values.
     'eco' => [
         ['49.3', '{VehicleFittedWithEcoInnovInd|EcoInnovationsFittedIndicator}', 'label' => 'eco_fitted'],
-        ['49.3.1', '{GeneralCodeOfTheEcoInnovations|GeneralCodeEcoInnovation}[ ({EcoInnovationCountry})]', 'all' => true, 'label' => 'eco_code'],
+        ['49.3.1', '{=GeneralCodeOfTheEcoInnovations|GeneralCodeEcoInnovation}[ ({EcoInnovationCountry})]', 'all' => true, 'label' => 'eco_code'],
         ['49.3.2.1', '{#TotalCO2EmisSavingDueEcoInnov} g/km', 'label' => 'eco_savings_nedc'],
         ['49.3.2.2', '{#TotalCO2WLTPEmisSavDueEcoInnov|WltpTotalCo2EmissionSavedDueEcoInnovation} g/km', 'label' => 'eco_savings'],
     ],
@@ -381,13 +461,16 @@ return [
             'co2' => ['low', 'medium', 'high', 'extra_high', 'combined'],
             'fuel' => ['low', 'medium', 'high', 'extra_high', 'combined'],
         ],
+        'no_combustion' => [
+            'fuel' => ['low', 'medium', 'high', 'extra_high', 'combined'],
+        ],
     ],
 
     // Fields that only number the elements of a table: they tell a reader nothing, so they are not listed as further data.
-    'technical' => ['AxleNumberCombination', 'FinalDriveNumber', 'FinalDriveVehNumber', 'FinalDriveVehicleNumber', 'MechanicalCouplingNumber', 'MechanicalCouplingNumberTowingMasses', 'TechnAddDataGrAxleNumber', 'TyreAxleCombinationNumber', 'TyreNumberCombination'],
+    'technical' => ['AxleNumberCombination', 'FinalDriveNumber', 'FinalDriveVehNumber', 'FinalDriveVehicleNumber', 'MechanicalCouplingNumber', 'MechanicalCouplingNumberTowingMasses', 'MechanicalCouplingNumberVerticalMass', 'MemberAxleNumber', 'TechnAddDataGrAxleNumber', 'TyreAxleCombinationNumber', 'TyreNumberCombination'],
 
     // What the family identifiers of the data set are in the certificate.
-    'identifiers' => ['IP' => '0.2.3.1', 'ATCT' => '0.2.3.2', 'PEMS' => '0.2.3.3', 'RL' => '0.2.3.4', 'RM' => '0.2.3.5', 'PR' => '0.2.3.6', 'EV' => '0.2.3.7'],
+    'identifiers' => ['IP' => '0.2.3.1', 'ATCT' => '0.2.3.2', 'PEMS' => '0.2.3.3', 'RL' => '0.2.3.4', 'RM' => '0.2.3.5', 'PR' => '0.2.3.6', 'EV' => '0.2.3.7', 'OM' => '48.3'],
 
     // What a trailer of the data set is in the certificate.
     'trailers' => ['DB' => '18.1', 'DA' => '18.2', 'DC' => '18.3', 'DE' => '18.3.1'],

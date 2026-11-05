@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 /*
  * Les libellés des points du certificat de conformité : annexe VIII du règlement (UE) 2020/683, version consolidée du
- * 1er janvier 2024, sans les points de suite pour les valeurs ni les notes. Les unités figurent avec les valeurs.
+ * 1er janvier 2024, sans les points de suite pour les valeurs ni les notes, plus le point 48.3 du règlement d’exécution
+ * (UE) 2025/1706. Les unités figurent avec les valeurs.
  */
 
 return [
@@ -128,6 +129,7 @@ return [
     '48' => 'Émissions d’échappement',
     '48.1' => 'Valeur corrigée du coefficient d’absorption des fumées',
     '48.2' => 'Valeurs RDE maximales déclarées (le cas échéant)',
+    '48.3' => 'Numéro(s) de fiche de réception et identifiant(s) de la famille OBM pertinents',
     '49' => 'Émissions de CO2/consommation de carburant/consommation d’énergie électrique',
     '49.1' => 'Code de hachage cryptographique du dossier d’enregistrements du constructeur',
     '49.2' => 'Véhicule lourd à émission nulle',
@@ -136,7 +138,6 @@ return [
     '49.5' => 'Émissions de CO2 spécifiques (gCO2/tkm)',
     '49.5.1' => 'Émissions de CO2 spécifiques (gCO2/pkm)',
     '49.6' => 'Charge utile moyenne',
-    '49.6.1' => 'Occupation moyenne (nombre de personnes)',
     '49.7' => 'Groupe/sous-groupe de véhicules',
     '49.8' => 'Code de hachage cryptographique du dossier d’information du véhicule',
     '49.9' => 'Volume de cargaison',

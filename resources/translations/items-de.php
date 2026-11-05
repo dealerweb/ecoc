@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 /*
  * Die Bezeichnungen der Punkte der Übereinstimmungsbescheinigung: Anhang VIII der Verordnung (EU) 2020/683, konsolidierte
- * Fassung vom 1. Januar 2024, ohne die Punkte für die Werte und ohne die Fußnoten. Die Einheiten stehen bei den Werten.
+ * Fassung vom 1. Januar 2024, ohne die Punkte für die Werte und ohne die Fußnoten, dazu Punkt 48.3 aus der
+ * Durchführungsverordnung (EU) 2025/1706. Die Einheiten stehen bei den Werten.
  */
 
 return [
@@ -128,6 +129,7 @@ return [
     '48' => 'Abgasemissionen',
     '48.1' => 'Rauch (korrigierter Wert des Absorptionskoeffizienten)',
     '48.2' => 'Angegebene höchste RDE-Werte (falls zutreffend)',
+    '48.3' => 'Die jeweiligen Nummern der Typgenehmigungsbögen und Kennungen der OBM-Familie',
     '49' => 'CO2-Emissionen/Kraftstoffverbrauch/Stromverbrauch',
     '49.1' => 'Kryptografischer Hash der Aufzeichnungsdatei des Herstellers',
     '49.2' => 'Emissionsfreies schweres Nutzfahrzeug',
@@ -136,7 +138,6 @@ return [
     '49.5' => 'Spezifische CO2-Emissionen (gCO2/tkm)',
     '49.5.1' => 'Spezifische CO2-Emissionen (gCO2/pkm)',
     '49.6' => 'Durchschnittlicher Nutzlastwert',
-    '49.6.1' => 'Durchschnittliche Belegung (Zahl der Personen)',
     '49.7' => 'Fahrzeuguntergruppe/-gruppe',
     '49.8' => 'Kryptografischer Hash der Fahrzeuginformationsdatei',
     '49.9' => 'Ladevolumen',

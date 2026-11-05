@@ -15,4 +15,4 @@ Every script takes the path of a data set as its argument, and otherwise reads o
 The vehicles in `input` are fictional: the structure and the technical values of the two IVI 1.9 data sets follow real
 ones, everything that identifies a vehicle or a person is made up, and they validate against the schema of IVI 1.11.
 The IVI 2.0 data set is written from the published
-draft of the schema and validates against it, only its signature is a placeholder.
+schema of 2026-09-28 and validates against it, only its signature is a placeholder.
