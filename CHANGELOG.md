@@ -7,6 +7,17 @@ part of the public API and may change in any release.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-06
+
+### Fixed
+
+- The environmental performance stands as that of the vehicle, as in the certificate: what several fuels give stands together,
+  every value once and the values of the WLTP in one table. A data set that repeats these values for every electric motor, as
+  manufacturers do, showed them once per motor, and the electric values of a hybrid stood in a table of their own at point 49.4,
+  in IVI 1.x without a heading; the booklet of such a data set had a second sheet with three blank pages. Fuels with different
+  values for the same point, like petrol and gas, still stand one by one, now each under a heading: the electric part without a
+  fuel code as electricity, with the engines it belongs to where there are several.
+
 ## [1.1.0] - 2026-11-05
 
 ### Changed
@@ -70,6 +81,7 @@ First public release.
 - `CodeLists`: what the codes of a data set mean, in German, English and French, and the title and the unit of a field.
 - Runnable examples with fictional data sets (`examples/`).
 
-[Unreleased]: https://github.com/dealerweb/ecoc/compare/v1.1.0...main
+[Unreleased]: https://github.com/dealerweb/ecoc/compare/v1.1.1...main
+[1.1.1]: https://github.com/dealerweb/ecoc/releases/tag/v1.1.1
 [1.1.0]: https://github.com/dealerweb/ecoc/releases/tag/v1.1.0
 [1.0.0]: https://github.com/dealerweb/ecoc/releases/tag/v1.0.0

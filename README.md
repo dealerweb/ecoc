@@ -95,9 +95,11 @@ The renderers throw an `InvalidArgumentException` for a language other than `de`
 - **Numbers as delivered:** only the decimal separator follows the language, the certificate states its values exactly.
   A date has the form of the language; a time delivered with a time zone is shown in local time in German and French,
   and in UTC in English.
-- **Several engines and fuels:** the rows of each engine and fuel, with a heading where there is more than one. The
-  electric part of a plug-in hybrid, which IVI 1.x delivers as a fuel without a code, stands with the fuel before it,
-  in the order of the numbers.
+- **Several engines and fuels:** the rows of each engine, with a heading where there is more than one. The electric part
+  of a plug-in hybrid, which IVI 1.x delivers as a fuel without a code, stands with the fuel before it, in the order of
+  the numbers. The environmental performance is that of the vehicle, as in the certificate: what the fuels give stands
+  together, every value once and the WLTP values in one table, also where a manufacturer repeats them for every electric
+  motor. Only fuels with different values for the same point, like petrol and gas, stand one by one under their headings.
 - **WLTP and NEDC as tables:** the columns (low, medium, high, extra high, combined, weighted) and rows (charge sustaining,
   charge depleting) the vehicle has values for.
 - **Only what the data set delivers:** no value is ever computed or filled in. Where the model of the certificate provides

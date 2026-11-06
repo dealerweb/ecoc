@@ -28,6 +28,9 @@ final class ViewBuilder
 
     private const ROAD_VEHICLES = '2018/858';
 
+    /** What separates the values of a row that pairs labels with values: "CO: 1 mg/km · NOx: 2 mg/km". */
+    private const PAIRS = ' · ';
+
     /** @var SplObjectStorage<Node, true> */
     private SplObjectStorage $used;
 
@@ -414,7 +417,7 @@ final class ViewBuilder
             }
         }
 
-        return $parts === [] ? [] : [implode(' · ', $parts)];
+        return $parts === [] ? [] : [implode(self::PAIRS, $parts)];
     }
 
     /**
@@ -794,33 +797,219 @@ final class ViewBuilder
     }
 
     /**
-     * The environmental performance, fuel by fuel, and the eco-innovations of the whole vehicle: with one fuel all of it in
-     * the order of the numbers, as in the model of the certificate; with several, the eco-innovations stand behind them.
+     * The environmental performance and the eco-innovations of the vehicle. The certificate states them for the whole vehicle
+     * (points 46 to 49 of Annex VIII), the data set fuel by fuel - and a manufacturer repeats them there: the electric motors
+     * of a vehicle each carry the same consumption and the same ranges. A fuel that repeats an earlier one is not shown again,
+     * and what the fuels give together stands together, as in the model of the certificate: every value once, all of it in
+     * the order of the numbers, the values of the WLTP in one table. Only when two fuels give different values for the same
+     * point, like a vehicle that runs on petrol and on gas, the document goes fuel by fuel, each under its heading, and the
+     * eco-innovations stand behind them.
      *
      * @return list<Block>
      */
     private function environment(): array
     {
-        // A fuel without values of its own, like the electric part of a plug-in hybrid, needs no heading for the other.
-        $filled = [];
+        // Point by point of the layout, so that the values of several fuels can stand together in its order.
+        /** @var list<array{nodes: list<Node>, points: list<list<Block>>}> $fuels */
+        $fuels = [];
         foreach ($this->fuels() as $fuel) {
-            $blocks = $this->items($this->layout['fuel_environment'], $fuel);
-            if ($blocks !== []) {
-                $filled[] = [$fuel, $blocks];
+            $points = [];
+            foreach ($this->layout['fuel_environment'] as $item) {
+                $points[] = $this->items([$item], $fuel);
             }
+            $blocks = array_merge(...$points);
+            if ($blocks === []) {
+                continue;
+            }
+            $repeated = false;
+            foreach ($fuels as $index => $earlier) {
+                if (self::repeats(array_merge(...$earlier['points']), $blocks)) {
+                    $repeated = true;
+                    // Its engine joins the heading of the same fuel, like a second electric motor, never that of another.
+                    if ($earlier['nodes'][0]->first('FuelCode', 'EnergySource')?->value === $fuel->first('FuelCode', 'EnergySource')?->value) {
+                        $fuels[$index]['nodes'][] = $fuel;
+
+                        break;
+                    }
+                }
+            }
+            if (! $repeated) {
+                $fuels[] = ['nodes' => [$fuel], 'points' => $points];
+            }
+        }
+
+        $eco = $this->items($this->layout['eco'], $this->root);
+        $together = $this->together(array_column($fuels, 'points'));
+        if ($together !== null) {
+            return self::inNumberOrder([...$together, ...$eco]);
         }
 
         $out = [];
-        foreach ($filled as [$fuel, $blocks]) {
-            $code = $fuel->first('FuelCode', 'EnergySource');
-            if (count($filled) > 1 && $code !== null) {
-                $out[] = ['type' => 'subheading', 'text' => $this->display($code)];
-            }
-            array_push($out, ...$blocks);
+        foreach ($fuels as $fuel) {
+            $out[] = ['type' => 'subheading', 'text' => $this->fuelHeading($fuel['nodes'])];
+            array_push($out, ...array_merge(...$fuel['points']));
         }
-        array_push($out, ...$this->items($this->layout['eco'], $this->root));
 
-        return count($filled) > 1 ? $out : self::inNumberOrder($out);
+        return [...$out, ...$eco];
+    }
+
+    /**
+     * Whether the blocks of a fuel only repeat those of an earlier fuel: every row and every table among them.
+     *
+     * @param list<Block> $earlier
+     * @param list<Block> $blocks
+     */
+    private static function repeats(array $earlier, array $blocks): bool
+    {
+        foreach ($blocks as $block) {
+            if (! in_array($block, $earlier, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The values of several fuels as those of one vehicle, point by point of the layout: a row another fuel shows the same
+     * stands once, the tables become one. Null when two fuels give different values for the same point.
+     *
+     * @param list<list<list<Block>>> $fuels the blocks of each fuel, point by point
+     * @return list<Block>|null
+     */
+    private function together(array $fuels): ?array
+    {
+        $out = [];
+        foreach (array_keys($this->layout['fuel_environment']) as $point) {
+            $together = null;
+            foreach ($fuels as $points) {
+                // A point is one row or one table.
+                foreach ($points[$point] ?? [] as $block) {
+                    if ($together === null) {
+                        $together = $block;
+                    } elseif ($block['type'] === 'table') {
+                        $together = $this->joinedTable($together, $block);
+                        if ($together === null) {
+                            return null;
+                        }
+                    } elseif ($block !== $together) {
+                        $together = self::wider($together, $block);
+                        if ($together === null) {
+                            return null;
+                        }
+                    }
+                }
+            }
+            if ($together !== null) {
+                $out[] = $together;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Of two rows for the same point, the one that holds all values of the other: a fuel often repeats only a part of a row,
+     * like the drive-by noise of the vehicle without its stationary noise. Null when each has a value the other lacks.
+     *
+     * @param Block $row
+     * @param Block $other
+     * @return Block|null
+     */
+    private static function wider(array $row, array $other): ?array
+    {
+        if ($row['missing'] !== $other['missing']) {
+            return null;
+        }
+        $mine = self::values($row);
+        $theirs = self::values($other);
+        if (array_diff($theirs, $mine) === []) {
+            return $row;
+        }
+
+        return array_diff($mine, $theirs) === [] ? $other : null;
+    }
+
+    /**
+     * The values of a row: its lines, a line that pairs labels with values split into its pairs.
+     *
+     * @param Block $row
+     * @return list<string>
+     */
+    private static function values(array $row): array
+    {
+        /** @var list<string> $lines */
+        $lines = $row['lines'];
+        $values = [];
+        foreach ($lines as $line) {
+            array_push($values, ...explode(self::PAIRS, $line));
+        }
+
+        return $values;
+    }
+
+    /**
+     * Two tables of a kind as one: a cell only one of them has a value for takes it. Null when both have a value for the
+     * same cell and the values differ, or the same row in another unit.
+     *
+     * @param Block $table
+     * @param Block $other
+     * @return Block|null
+     */
+    private function joinedTable(array $table, array $other): ?array
+    {
+        /** @var array<string, array{label: string, cells: array<int, string|null>}> $filled */
+        $filled = $table['filled'];
+        /** @var array<string, array{label: string, cells: array<int, string|null>}> $more */
+        $more = $other['filled'];
+
+        foreach ($more as $rowKey => $row) {
+            $mine = $filled[$rowKey] ?? null;
+            if ($mine === null) {
+                $filled[$rowKey] = $row;
+
+                continue;
+            }
+            if ($mine['label'] !== $row['label']) {
+                return null;
+            }
+            foreach ($row['cells'] as $column => $cell) {
+                $value = $mine['cells'][$column] ?? '';
+                if ($cell === '' || $cell === $value) {
+                    continue;
+                }
+                if ($value !== '') {
+                    return null;
+                }
+                $filled[$rowKey]['cells'][$column] = $cell;
+            }
+        }
+
+        return $this->tableBlock((string) $table['name'], $filled);
+    }
+
+    /**
+     * The heading of a fuel when the document goes fuel by fuel: the name of the fuel - in IVI 1.x the electric part of a
+     * hybrid has no fuel code, it is electricity - and, with several engines, the engines the fuel belongs to.
+     *
+     * @param list<Node> $fuels the fuel and those that repeat its values
+     */
+    private function fuelHeading(array $fuels): string
+    {
+        $code = $fuels[0]->first('FuelCode', 'EnergySource');
+        $heading = $code === null ? $this->texts->get('word.electricity') : $this->display($code);
+
+        $engines = $this->root->find('EngineGroup', 'EnergyConvertorGroup');
+        $numbers = [];
+        foreach ($engines as $index => $engine) {
+            foreach ($engine->find('FuelGroup', 'EnergySourceGroup') as $fuel) {
+                if (in_array($fuel, $fuels, true) && ! in_array($index + 1, $numbers, true)) {
+                    $numbers[] = $index + 1;
+                }
+            }
+        }
+
+        return count($engines) < 2 || $numbers === [] ? $heading : $heading . ' (' . $this->texts->get('word.engine') . ' ' . implode(', ', $numbers) . ')';
     }
 
     /**
@@ -840,8 +1029,8 @@ final class ViewBuilder
     {
         $definition = $this->layout['tables'][$name];
         $expected = $name === 'wltp' && $scope === $this->gapHost ? $this->expectedCells() : [];
+        $unit = $this->fuelUnit($scope);
         $filled = [];
-        $columnsWithValues = [];
         foreach ($definition['rows'] as $rowKey => $fields) {
             $cells = [];
             $shown = false;
@@ -853,38 +1042,56 @@ final class ViewBuilder
                 if ($node === null && in_array($definition['columns'][$column], $expected[$rowKey] ?? [], true) && $this->root->first(...explode('|', $names)) === null) {
                     $cells[$column] = null;
                 }
-                if ($cells[$column] !== '') {
-                    $columnsWithValues[$column] = true;
-                    $shown = true;
-                }
+                $shown = $shown || $cells[$column] !== '';
             }
             if ($shown) {
-                $filled[$rowKey] = $cells;
+                $filled[$rowKey] = ['label' => $this->texts->get('table.' . $rowKey, ['unit' => $unit]), 'cells' => $cells];
             }
         }
-        if ($filled === []) {
-            return [];
-        }
 
-        $columns = array_keys($columnsWithValues);
+        return $filled === [] ? [] : [$this->tableBlock($name, $filled)];
+    }
+
+    /**
+     * A table of the document from its rows: the columns that have a value, the rows in the order of the table. The rows stay
+     * in the block, so that the tables of several fuels can become one.
+     *
+     * @param array<string, array{label: string, cells: array<int, string|null>}> $filled the rows with a value, by key: the cells
+     *        by column - a value, null for a value the data set lacks, '' where the certificate has no such value
+     * @return Block
+     */
+    private function tableBlock(string $name, array $filled): array
+    {
+        $definition = $this->layout['tables'][$name];
+        $columns = [];
+        foreach ($filled as $row) {
+            foreach ($row['cells'] as $column => $cell) {
+                if ($cell !== '') {
+                    $columns[$column] = true;
+                }
+            }
+        }
+        $columns = array_keys($columns);
         sort($columns);
-        $unit = $this->fuelUnit($scope);
-
-        $rows = [];
-        foreach ($filled as $rowKey => $cells) {
-            $row = [$this->texts->get('table.' . $rowKey, ['unit' => $unit])];
-            foreach ($columns as $column) {
-                $row[] = $cells[$column];
-            }
-            $rows[] = $row;
-        }
 
         $head = [$this->texts->get('label.table_' . $name)];
         foreach ($columns as $column) {
             $head[] = $this->texts->get('column.' . $definition['columns'][$column]);
         }
 
-        return [['type' => 'table', 'number' => $this->tableNumber($name), 'head' => $head, 'rows' => $rows, 'missing' => self::MISSING]];
+        $rows = [];
+        foreach (array_keys($definition['rows']) as $rowKey) {
+            $row = $filled[$rowKey] ?? null;
+            if ($row !== null) {
+                $line = [$row['label']];
+                foreach ($columns as $column) {
+                    $line[] = $row['cells'][$column];
+                }
+                $rows[] = $line;
+            }
+        }
+
+        return ['type' => 'table', 'name' => $name, 'number' => $this->tableNumber($name), 'head' => $head, 'rows' => $rows, 'missing' => self::MISSING, 'filled' => $filled];
     }
 
     /**

@@ -128,6 +128,7 @@ return [
     'word.version' => 'version',
     'word.axle' => 'Axle',
     'word.engine' => 'Engine',
+    'word.electricity' => 'Electricity',
     'word.stationary' => 'Stationary',
     'word.drive_by' => 'Drive-by',
     'word.particulates_mass' => 'Particulates (mass)',

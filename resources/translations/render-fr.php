@@ -128,6 +128,7 @@ return [
     'word.version' => 'version',
     'word.axle' => 'Essieu',
     'word.engine' => 'Moteur',
+    'word.electricity' => 'Électricité',
     'word.stationary' => 'À l’arrêt',
     'word.drive_by' => 'En marche (passage)',
     'word.particulates_mass' => 'Particules (masse)',

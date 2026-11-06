@@ -128,6 +128,7 @@ return [
     'word.version' => 'Version',
     'word.axle' => 'Achse',
     'word.engine' => 'Motor',
+    'word.electricity' => 'Strom',
     'word.stationary' => 'Standgeräusch',
     'word.drive_by' => 'Fahrgeräusch',
     'word.particulates_mass' => 'Partikelmasse',
